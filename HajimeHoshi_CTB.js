@@ -52,7 +52,7 @@
         var color2 = this.textColor(6);
         this.drawGauge(x, y, width, actor.wpRate(), color1, color2);
         this.changeTextColor(this.systemColor());
-        this.drawText("Time", x, y, 44);
+        this.drawText("Time", x, y, 88);
     };
 
     //
@@ -141,7 +141,7 @@
         });
         var averageWpDelta = MAX_WP / AVERAGE_TIME / activeBattlers.length;
 
-        this._turnWp += Math.min(averageWpDelta, MAX_WP)|0;
+        this._turnWp += averageWpDelta.clamp(0, MAX_WP)|0;
         if (this._turnWp >= MAX_WP) {
             this._turnWp -= MAX_WP;
             $gameTroop.increaseTurn();
@@ -156,7 +156,7 @@
         }, 0);
         var averageAgi = totalAgi / this.allBattleMembers().length;
         activeBattlers.forEach(function(battler) {
-            var delta = Math.min(averageWpDelta * (battler.agi / averageAgi), MAX_WP)|0;
+            var delta = (averageWpDelta * (battler.agi / averageAgi)).clamp(0, MAX_WP)|0;
             battler.gainWp(delta);
         });
         // TODO: Sort battlers here?
