@@ -173,7 +173,9 @@
         do {
             if (!this.actor() || !this.actor().selectNextCommand()) {
                 this.actor().setWp(this.actor().wp - MAX_WP);
-                this._phase = 'turn';
+                if (!this.isEscaped()) {
+                    this._phase = 'turn';
+                }
                 $gameParty.requestMotionRefresh();
                 break;
             }
@@ -196,4 +198,30 @@
         }
     };
 
+    BattleManager.startInput = function() {
+        throw 'not reach';
+    };
+
+    // Add 'escape' command.
+
+    var _Window_ActorCommand_makeCommandList = Window_ActorCommand.prototype.makeCommandList;
+    Window_ActorCommand.prototype.makeCommandList = function() {
+        _Window_ActorCommand_makeCommandList.call(this);
+        this.addCommand(TextManager.escape, 'escape', BattleManager.canEscape());
+    };
+
+    var _Scene_Battle_createActorCommandWindow = Scene_Battle.prototype.createActorCommandWindow;
+    Scene_Battle.prototype.createActorCommandWindow = function() {
+        _Scene_Battle_createActorCommandWindow.call(this);
+        this._actorCommandWindow.setHandler('escape',   this.commandEscape.bind(this));
+    };
+
+    Scene_Battle.prototype.commandEscape = function() {
+        BattleManager.processEscape();
+        this.selectNextCommand();
+    };
+
+    BattleManager.startTurn = function() {
+        // Do nothing. This is called only from processEscape.
+    };
 })();
