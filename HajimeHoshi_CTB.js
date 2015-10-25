@@ -117,7 +117,10 @@
             $gameTroop.increaseTurn();
         }
 
-        var totalAgi = this.allBattleMembers().map(function(battler) {
+        var activeBattlers = this.allBattleMembers().filter(function(battler) {
+            return battler.canMove();
+        });
+        var totalAgi = activeBattlers.map(function(battler) {
             // TODO: Consider traits (see attackSpped()).
             // NOTE: agi property is already affected by param traits.
             return battler.agi;
@@ -125,12 +128,12 @@
             return previous + current;
         }, 0);
         var averageAgi = totalAgi / this.allBattleMembers().length;
-        this.allBattleMembers().forEach(function(battler) {
+        activeBattlers.forEach(function(battler) {
             var delta = Math.min((MAX_WP / 60) * (battler.agi / averageAgi), MAX_WP)|0;
             battler.gainWp(delta);
         });
         // TODO: Sort battlers here?
-        this.allBattleMembers().forEach(function(battler) {
+        activeBattlers.forEach(function(battler) {
             if (battler.wp < MAX_WP) {
                 return;
             }
