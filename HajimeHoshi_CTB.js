@@ -56,7 +56,7 @@
     };
 
     //
-    // System
+    // 'wp' parameter
     //
 
     Object.defineProperty(Game_BattlerBase.prototype, 'wp', {
@@ -82,7 +82,6 @@
     var _Game_Battler_onBattleStart = Game_Battler.prototype.onBattleStart;
     Game_Battler.prototype.onBattleStart = function() {
         _Game_Battler_onBattleStart.call(this);
-        // TODO: Consider |_surprise| and |_preemptive|
         this.setWp(Math.randomInt(MAX_WP / 2));
     };
 
@@ -90,6 +89,10 @@
         // TODO: Invert |value| if needed (see gainTp())
         this.setWp(this.wp + value);
     };
+
+    //
+    // System
+    //
 
     var _BattleManager_initMembers = BattleManager.initMembers;
     BattleManager.initMembers = function() {
@@ -101,6 +104,18 @@
     var _BattleManager_startBattle = BattleManager.startBattle;
     BattleManager.startBattle = function() {
         _BattleManager_startBattle.call(this);
+        if (this._preemptive) {
+            $gameParty.members().forEach(function(member) {
+                member.setWp(MAX_WP);
+            });
+        }
+        if (this._surprise) {
+            $gameTroop.members().forEach(function(member) {
+                member.setWp(MAX_WP);
+            });
+        }
+        this._preemptive = false;
+        this._surprise = false;
         $gameParty.makeActions();
         $gameTroop.makeActions();
         this.makeActionOrders();
@@ -145,9 +160,9 @@
             battler.gainWp(delta);
         });
         // TODO: Sort battlers here?
-        activeBattlers.forEach(function(battler) {
+        activeBattlers.some(function(battler) {
             if (battler.wp < MAX_WP) {
-                return;
+                return false;
             }
             this._subject = battler;
             this._turnEndSubject = battler;
@@ -156,14 +171,15 @@
                 if (battler.canInput()) {
                     this._actorIndex = battler.index();
                     this._phase = 'input';
-                    return;
+                    return true;
                 }
                 battler.setWp(battler.wp - MAX_WP);
                 this._phase = 'turn';
-                return
+                return true;
             }
             battler.setWp(battler.wp - MAX_WP);
             this._phase = 'turn';
+            return true;
         }, this);
         this.refreshStatus();
     };
@@ -198,8 +214,6 @@
 
     BattleManager.endTurn = function() {
         this._phase = 'turnEnd';
-        this._preemptive = false;
-        this._surprise = false;
         if (this._turnEndSubject !== null) {
             this._turnEndSubject.onTurnEnd();
             this.refreshStatus();
