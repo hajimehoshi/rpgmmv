@@ -23,6 +23,10 @@
 (function() {
     // WP means 'waiting time'.
 
+    //
+    // UI
+    //
+
     var MAX_WP = 65536;
     var AVERAGE_TIME = 60;
 
@@ -50,6 +54,10 @@
         this.changeTextColor(this.systemColor());
         this.drawText("Time", x, y, 44);
     };
+
+    //
+    // System
+    //
 
     Object.defineProperty(Game_BattlerBase.prototype, 'wp', {
         get: function() { return this._wp; },
@@ -87,6 +95,7 @@
     BattleManager.initMembers = function() {
         _BattleManager_initMembers.call(this);
         this._turnWp = 0;
+        this._turnEndSubject = null;
     };
 
     var _BattleManager_startBattle = BattleManager.startBattle;
@@ -141,7 +150,7 @@
                 return;
             }
             this._subject = battler;
-            this._turn_end_subject = battler;
+            this._turnEndSubject = battler;
             battler.makeActions();
             if (battler.isActor()) {
                 if (battler.canInput()) {
@@ -184,17 +193,18 @@
 
     BattleManager.selectPreviousCommand = function() {
         // Do nothing
+        // TODO: Implement skipping the current turn.
     };
 
     BattleManager.endTurn = function() {
         this._phase = 'turnEnd';
         this._preemptive = false;
         this._surprise = false;
-        if (typeof this._turn_end_subject !== 'undefined') {
-            this._turn_end_subject.onTurnEnd();
+        if (this._turnEndSubject !== null) {
+            this._turnEndSubject.onTurnEnd();
             this.refreshStatus();
-            this._logWindow.displayAutoAffectedStatus(this._turn_end_subject);
-            this._logWindow.displayRegeneration(this._turn_end_subject);
+            this._logWindow.displayAutoAffectedStatus(this._turnEndSubject);
+            this._logWindow.displayRegeneration(this._turnEndSubject);
         }
     };
 
@@ -202,7 +212,9 @@
         throw 'not reach';
     };
 
-    // Add 'escape' command.
+    //
+    // Escaping
+    //
 
     var _Window_ActorCommand_makeCommandList = Window_ActorCommand.prototype.makeCommandList;
     Window_ActorCommand.prototype.makeCommandList = function() {
@@ -222,6 +234,28 @@
     };
 
     BattleManager.startTurn = function() {
-        // Do nothing. This is called only from processEscape.
+        throw 'not reach';
     };
+
+    BattleManager.makeEscapeRatio = function() {
+        this._escapeRatio = 0.25 * $gameParty.agility() / $gameTroop.agility();
+    };
+
+    BattleManager.processEscape = function() {
+        $gameParty.removeBattleStates();
+        $gameParty.performEscape();
+        SoundManager.playEscape();
+        var success = this._preemptive ? true : (Math.random() < this._escapeRatio);
+        if (success) {
+            this.displayEscapeSuccessMessage();
+            this._escaped = true;
+            this.processAbort();
+        } else {
+            this.displayEscapeFailureMessage();
+            this._escapeRatio += 0.05;
+            $gameParty.clearActions();
+        }
+        return success;
+    };
+
 })();
