@@ -24,6 +24,7 @@
     // WP means 'waiting time'.
 
     var MAX_WP = 65536;
+    var AVERAGE_TIME = 60;
 
     Window_BattleStatus.prototype.gaugeAreaWidth = function() {
         return 400;
@@ -111,15 +112,17 @@
     };
 
     BattleManager.updateWaiting = function() {
-        this._turnWp += Math.min((MAX_WP / 60), MAX_WP)|0;
+        var activeBattlers = this.allBattleMembers().filter(function(battler) {
+            return battler.canMove();
+        });
+        var averageWpDelta = MAX_WP / AVERAGE_TIME / activeBattlers.length;
+
+        this._turnWp += Math.min(averageWpDelta, MAX_WP)|0;
         if (this._turnWp >= MAX_WP) {
             this._turnWp -= MAX_WP;
             $gameTroop.increaseTurn();
         }
 
-        var activeBattlers = this.allBattleMembers().filter(function(battler) {
-            return battler.canMove();
-        });
         var totalAgi = activeBattlers.map(function(battler) {
             // TODO: Consider traits (see attackSpped()).
             // NOTE: agi property is already affected by param traits.
@@ -129,7 +132,7 @@
         }, 0);
         var averageAgi = totalAgi / this.allBattleMembers().length;
         activeBattlers.forEach(function(battler) {
-            var delta = Math.min((MAX_WP / 60) * (battler.agi / averageAgi), MAX_WP)|0;
+            var delta = Math.min(averageWpDelta * (battler.agi / averageAgi), MAX_WP)|0;
             battler.gainWp(delta);
         });
         // TODO: Sort battlers here?
