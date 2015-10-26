@@ -15,13 +15,22 @@
 /*:
  * @plugindesc CTB (Count Time Battle) like FF10.
  * @author Hajime Hoshi
+ *
+ * @param Formula 
+ * @desc The formula to calculate the increment rate of the waiting point for a turn.
+ * @default a.agi / (battlers.reduce(function(p, b) { return p + b.agi; }, 0) / battlers.length)
+ *
  * @help This plugin offers Count Time Battle system.
+ * A battler has a 'waiting point' and this increases for each frame.
+ * A battler becames actionable when its waiting point reaches maximum (65536).
  * Note that this is not 'ATB' but 'CTB' because time stops for any actions.
  * I used EllyeSimpleATB.js as reference (http://pastebin.com/fhGC2Sn7).
  */
 
 (function() {
-    // WP means 'waiting time'.
+    var parameters = PluginManager.parameters('HajimeHoshi_CTB');
+    // TODO: Consider traits (see attackSpped()).
+    var formula = parameters['Formula'] || 'a.agi / (battlers.reduce(function(p, b) { return p + b.agi; }, 0) / battlers.length)';
 
     //
     // UI
@@ -135,6 +144,11 @@
         }
     };
 
+    function evalWpRate(battler, battlers) {
+        var a = battler;
+        return Math.max(eval(formula), 0);
+    }
+
     BattleManager.updateWaiting = function() {
         var activeBattlers = this.allBattleMembers().filter(function(battler) {
             return battler.canMove();
@@ -147,16 +161,9 @@
             $gameTroop.increaseTurn();
         }
 
-        var totalAgi = activeBattlers.map(function(battler) {
-            // TODO: Consider traits (see attackSpped()).
-            // NOTE: agi property is already affected by param traits.
-            return battler.agi;
-        }).reduce(function(previous, current) {
-            return previous + current;
-        }, 0);
-        var averageAgi = totalAgi / this.allBattleMembers().length;
         activeBattlers.forEach(function(battler) {
-            var delta = (averageWpDelta * (battler.agi / averageAgi)).clamp(0, MAX_WP)|0;
+            var rate = evalWpRate(battler, activeBattlers);
+            var delta = (averageWpDelta * rate).clamp(0, MAX_WP)|0;
             battler.gainWp(delta);
         });
         // TODO: Sort battlers here?
