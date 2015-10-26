@@ -17,7 +17,7 @@
  * @author Hajime Hoshi
  *
  * @param Formula 
- * @desc The formula to calculate the increment rate of the waiting point for a turn.
+ * @desc The formula to calculate the multiplier of the waiting point for a turn.
  * @default a.agi / (battlers.reduce(function(p, b) { return p + b.agi; }, 0) / battlers.length)
  *
  * @help This plugin offers Count Time Battle system.
@@ -30,7 +30,7 @@
 (function() {
     var parameters = PluginManager.parameters('HajimeHoshi_CTB');
     // TODO: Consider traits (see attackSpped()).
-    var formula = parameters['Formula'] || 'a.agi / (battlers.reduce(function(p, b) { return p + b.agi; }, 0) / battlers.length)';
+    var formula = (parameters['Formula'] || 'a.agi / (battlers.reduce(function(p, b) { return p + b.agi; }, 0) / battlers.length)');
 
     //
     // UI
