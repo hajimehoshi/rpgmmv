@@ -21,6 +21,8 @@
  * @default 
  *
  * @help This plugin overrides a locale defined at $dataSystem.locale.
+ * This is useful for example when you want a Japanese name input window
+ * but the locale is English because you are using English RPG Maker.
  */
 
 (function() {
