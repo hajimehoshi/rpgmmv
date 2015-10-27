@@ -153,7 +153,7 @@
         var activeBattlers = this.allBattleMembers().filter(function(battler) {
             return battler.canMove();
         });
-        var averageWpDelta = MAX_WP / AVERAGE_TIME / activeBattlers.length;
+        var averageWpDelta = MAX_WP / AVERAGE_TIME / Math.sqrt(activeBattlers.length);
 
         this._turnWp += averageWpDelta.clamp(0, MAX_WP)|0;
         if (this._turnWp >= MAX_WP) {
