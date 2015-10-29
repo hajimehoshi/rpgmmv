@@ -103,6 +103,17 @@
     // System
     //
 
+    Game_Battler.prototype.onTurnEnd = function() {
+        this.clearResult();
+    };
+
+    Game_Battler.prototype.onTurnStart = function() {
+        this.regenerateAll();
+        this.updateStateTurns();
+        this.updateBuffTurns();
+        this.removeStatesAuto(2);
+    };
+
     var _BattleManager_initMembers = BattleManager.initMembers;
     BattleManager.initMembers = function() {
         _BattleManager_initMembers.call(this);
@@ -173,6 +184,12 @@
             }
             this._subject = battler;
             this._turnEndSubject = battler;
+
+            battler.onTurnStart();
+            this.refreshStatus();
+            this._logWindow.displayAutoAffectedStatus(battler);
+            this._logWindow.displayRegeneration(battler);
+
             battler.makeActions();
             if (battler.isActor() && battler.canInput()) {
                 battler.setActionState('inputting');
@@ -220,10 +237,7 @@
         this._phase = 'turnEnd';
         if (this._turnEndSubject !== null) {
             this._turnEndSubject.setWp(this._turnEndSubject.wp - MAX_WP);
-            this._turnEndSubject.onTurnEnd(); // TODO: Fix #2
-            this.refreshStatus();
-            this._logWindow.displayAutoAffectedStatus(this._turnEndSubject);
-            this._logWindow.displayRegeneration(this._turnEndSubject);
+            this._turnEndSubject.onTurnEnd();
         }
     };
 
