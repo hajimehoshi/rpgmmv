@@ -197,7 +197,6 @@
     };
 
     BattleManager.selectNextCommand = function() {
-        // TODO: This code is not easy to understand. Let's refactor.
         do {
             if (!this.actor() || !this.actor().selectNextCommand()) {
                 if (!this.isEscaped()) {
@@ -210,8 +209,11 @@
     };
 
     BattleManager.selectPreviousCommand = function() {
-        // Do nothing
-        // TODO: Implement skipping the current turn.
+        do {
+            if (!this.actor() || !this.actor().selectPreviousCommand()) {
+                return;
+            }
+        } while (!this.actor().canInput());
     };
 
     BattleManager.endTurn = function() {
