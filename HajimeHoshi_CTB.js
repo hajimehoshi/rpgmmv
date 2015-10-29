@@ -136,11 +136,12 @@
         }
         this._preemptive = false;
         this._surprise = false;
-        $gameParty.makeActions();
-        $gameTroop.makeActions();
-        this.makeActionOrders();
         this._phase = 'waiting';
         this._turnWp = 0;
+    };
+
+    BattleManager.makeActionOrders = function() {
+        throw 'not reach';
     };
 
     var _BattleManager_update = BattleManager.update;
@@ -204,8 +205,6 @@
     };
 
     BattleManager.updateTurnEnd = function() {
-        $gameParty.makeActions();
-        $gameTroop.makeActions();
         this._phase = 'waiting';
     };
 
