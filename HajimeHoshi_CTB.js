@@ -174,18 +174,12 @@
             this._subject = battler;
             this._turnEndSubject = battler;
             battler.makeActions();
-            if (battler.isActor()) {
-                if (battler.canInput()) {
-                    battler.setActionState('inputting');
-                    this._actorIndex = battler.index();
-                    this._phase = 'input';
-                    return true;
-                }
-                battler.setWp(battler.wp - MAX_WP);
-                this._phase = 'turn';
+            if (battler.isActor() && battler.canInput()) {
+                battler.setActionState('inputting');
+                this._actorIndex = battler.index();
+                this._phase = 'input';
                 return true;
             }
-            battler.setWp(battler.wp - MAX_WP);
             this._phase = 'turn';
             return true;
         }, this);
@@ -203,9 +197,9 @@
     };
 
     BattleManager.selectNextCommand = function() {
+        // TODO: This code is not easy to understand. Let's refactor.
         do {
             if (!this.actor() || !this.actor().selectNextCommand()) {
-                this.actor().setWp(this.actor().wp - MAX_WP);
                 if (!this.isEscaped()) {
                     this._phase = 'turn';
                 }
@@ -223,7 +217,8 @@
     BattleManager.endTurn = function() {
         this._phase = 'turnEnd';
         if (this._turnEndSubject !== null) {
-            this._turnEndSubject.onTurnEnd();
+            this._turnEndSubject.setWp(this._turnEndSubject.wp - MAX_WP);
+            this._turnEndSubject.onTurnEnd(); // TODO: Fix #2
             this.refreshStatus();
             this._logWindow.displayAutoAffectedStatus(this._turnEndSubject);
             this._logWindow.displayRegeneration(this._turnEndSubject);
