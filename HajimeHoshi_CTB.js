@@ -176,6 +176,7 @@
             battler.makeActions();
             if (battler.isActor()) {
                 if (battler.canInput()) {
+                    battler.setActionState('inputting');
                     this._actorIndex = battler.index();
                     this._phase = 'input';
                     return true;
