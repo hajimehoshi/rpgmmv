@@ -198,7 +198,7 @@
 
     BattleManager.selectNextCommand = function() {
         do {
-            if (!this.actor() || !this.actor().selectNextCommand()) {
+            if (!this.actor().selectNextCommand()) {
                 if (!this.isEscaped()) {
                     this._phase = 'turn';
                 }
@@ -210,7 +210,7 @@
 
     BattleManager.selectPreviousCommand = function() {
         do {
-            if (!this.actor() || !this.actor().selectPreviousCommand()) {
+            if (!this.actor().selectPreviousCommand()) {
                 return;
             }
         } while (!this.actor().canInput());
