@@ -100,6 +100,12 @@
         this.setWp(this.wp + value);
     };
 
+    var _Game_BattlerBase_die = Game_BattlerBase.prototype.die;
+    Game_BattlerBase.prototype.die = function() {
+        this._wp = 0;
+        _Game_BattlerBase_die.call(this); // refresh should be called inside.
+    };
+
     //
     // System
     //
