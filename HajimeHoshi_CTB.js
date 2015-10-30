@@ -173,24 +173,29 @@
             $gameTroop.increaseTurn();
         }
 
-        activeBattlers.forEach(function(battler) {
-            var rate = evalWpRate(battler, activeBattlers);
-            var delta = (averageWpDelta * rate).clamp(0, MAX_WP)|0;
-            battler.gainWp(delta);
+        var someoneHasTurn = activeBattlers.some(function(battler) {
+            return battler.wp >= MAX_WP;
         });
+
+        if (!someoneHasTurn) {
+            activeBattlers.forEach(function(battler) {
+                var rate = evalWpRate(battler, activeBattlers);
+                var delta = (averageWpDelta * rate).clamp(0, MAX_WP)|0;
+                battler.gainWp(delta);
+            });
+        }
         // TODO: Sort battlers here?
         activeBattlers.some(function(battler) {
             if (battler.wp < MAX_WP) {
                 return false;
             }
-            this._subject = battler;
-            this._turnEndSubject = battler;
-
             battler.onTurnStart();
             this.refreshStatus();
             this._logWindow.displayAutoAffectedStatus(battler);
             this._logWindow.displayRegeneration(battler);
-
+            // TODO: What if the battler becomes inactive?
+            this._subject = battler;
+            this._turnEndSubject = battler;
             battler.makeActions();
             if (battler.isActor() && battler.canInput()) {
                 battler.setActionState('inputting');
@@ -203,6 +208,8 @@
         }, this);
         this.refreshStatus();
     };
+
+    // TODO: override processTurn?
 
     BattleManager.updateTurnEnd = function() {
         this._phase = 'waiting';
@@ -234,7 +241,7 @@
 
     BattleManager.endTurn = function() {
         this._phase = 'turnEnd';
-        if (this._turnEndSubject !== null) {
+        if (this._turnEndSubject) {
             this._turnEndSubject.setWp(this._turnEndSubject.wp - MAX_WP);
             this._turnEndSubject.onTurnEnd();
         }
