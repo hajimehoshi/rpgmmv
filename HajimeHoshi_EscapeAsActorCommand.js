@@ -34,6 +34,8 @@
         this._isEscape = false;
     };
 
+    // TODO: setObject should clear the flag |_isEscape|.
+
     Game_Action.prototype.setEscape = function() {
         this.clear();
         this._isEscape = true;
@@ -89,8 +91,10 @@
         this.selectNextCommand();
     };
 
+    var _BattleManager_makeEscapeRatio = BattleManager.makeEscapeRatio;
     BattleManager.makeEscapeRatio = function() {
-        this._escapeRatio = 0.5 * $gameParty.agility() / $gameTroop.agility() * rate;
+        _BattleManager_makeEscapeRatio.call(this);
+        this._escapeRatio *= rate;
     };
 
     BattleManager.processEscape = function() {
