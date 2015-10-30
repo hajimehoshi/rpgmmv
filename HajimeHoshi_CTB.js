@@ -210,7 +210,6 @@
                 return false;
             }
             battler.onTurnStart();
-
             this.refreshStatus();
             this._logWindow.displayAutoAffectedStatus(battler);
             // TODO: What if the battler becomes inactive?
@@ -273,6 +272,16 @@
     };
 
     BattleManager.startTurn = function() {
-        // Do nothing. This can reach when 'escape' command is selected.
+        // Do nothing. This can be reached when 'escape' command is selected.
+    };
+
+    Sprite_Actor.prototype.updateTargetPosition = function() {
+        if (this._actor.canMove() && BattleManager.isEscaped()) {
+            this.retreat();
+        } else if (this._actor.isInputting() || this._actor.isActing()) {
+            this.stepForward();
+        } else if (!this.inHomePosition()) {
+            this.stepBack();
+        }
     };
 })();
