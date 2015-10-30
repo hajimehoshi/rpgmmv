@@ -264,6 +264,7 @@
         if (this._turnEndSubject) {
             this._turnEndSubject.setWp(this._turnEndSubject.wp - MAX_WP);
             this._turnEndSubject.onTurnEnd();
+            this._turnEndSubject.setActionState('undecided');
         }
     };
 
