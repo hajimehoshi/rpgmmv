@@ -30,7 +30,7 @@
 (function() {
     var parameters = PluginManager.parameters('HajimeHoshi_CTB');
     // TODO: Consider traits (see attackSpped()).
-    var formula = (parameters['Formula'] || 'a.agi / (battlers.reduce(function(p, b) { return p + b.agi; }, 0) / battlers.length)');
+    var formula = String(parameters['Formula'] || 'a.agi / (battlers.reduce(function(p, b) { return p + b.agi; }, 0) / battlers.length)');
 
     //
     // UI
@@ -271,51 +271,7 @@
         throw 'not reach';
     };
 
-    //
-    // Escaping
-    //
-
-    var _Window_ActorCommand_makeCommandList = Window_ActorCommand.prototype.makeCommandList;
-    Window_ActorCommand.prototype.makeCommandList = function() {
-        _Window_ActorCommand_makeCommandList.call(this);
-        this.addCommand(TextManager.escape, 'escape', BattleManager.canEscape());
-    };
-
-    var _Scene_Battle_createActorCommandWindow = Scene_Battle.prototype.createActorCommandWindow;
-    Scene_Battle.prototype.createActorCommandWindow = function() {
-        _Scene_Battle_createActorCommandWindow.call(this);
-        this._actorCommandWindow.setHandler('escape',   this.commandEscape.bind(this));
-    };
-
-    Scene_Battle.prototype.commandEscape = function() {
-        BattleManager.processEscape();
-        this.selectNextCommand();
-    };
-
     BattleManager.startTurn = function() {
-        throw 'not reach';
+        // Do nothing. This can reach when 'escape' command is selected.
     };
-
-    BattleManager.makeEscapeRatio = function() {
-        this._escapeRatio = 0.25 * $gameParty.agility() / $gameTroop.agility();
-    };
-
-    BattleManager.processEscape = function() {
-        // TODO: Escaping doesn't work well.
-        $gameParty.removeBattleStates();
-        $gameParty.performEscape();
-        SoundManager.playEscape();
-        var success = this._preemptive ? true : (Math.random() < this._escapeRatio);
-        if (success) {
-            this.displayEscapeSuccessMessage();
-            this._escaped = true;
-            this.processAbort();
-        } else {
-            this.displayEscapeFailureMessage();
-            this._escapeRatio += 0.05;
-            $gameParty.clearActions();
-        }
-        return success;
-    };
-
 })();
