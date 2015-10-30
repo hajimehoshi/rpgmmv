@@ -39,6 +39,7 @@
     var MAX_WP = 65536;
     var AVERAGE_TIME = 60;
 
+    // TODO: This hides actors' states accidentally.
     Window_BattleStatus.prototype.gaugeAreaWidth = function() {
         return 400;
     };
@@ -108,10 +109,13 @@
     };
 
     Game_Battler.prototype.onTurnStart = function() {
-        this.regenerateAll();
         this.updateStateTurns();
         this.updateBuffTurns();
         this.removeStatesAuto(2);
+    };
+
+    Game_Battler.prototype.onRegeneration = function() {
+        this.regenerateAll();
     };
 
     var _BattleManager_initMembers = BattleManager.initMembers;
@@ -162,6 +166,8 @@
     }
 
     BattleManager.updateWaiting = function() {
+        $gameParty.requestMotionRefresh();
+
         var activeBattlers = this.allBattleMembers().filter(function(battler) {
             return battler.canMove();
         });
@@ -170,7 +176,17 @@
         this._turnWp += averageWpDelta.clamp(0, MAX_WP)|0;
         if (this._turnWp >= MAX_WP) {
             this._turnWp -= MAX_WP;
+            // TODO: Check events work correctly.
             $gameTroop.increaseTurn();
+            activeBattlers.forEach(function(battler) {
+                battler.onRegeneration();
+                this.refreshStatus();
+                this._logWindow.displayAutoAffectedStatus(battler);
+                this._logWindow.displayRegeneration(battler);
+            }, this);
+        }
+        if (this.checkBattleEnd()) {
+            return;
         }
 
         var someoneHasTurn = activeBattlers.some(function(battler) {
@@ -190,9 +206,9 @@
                 return false;
             }
             battler.onTurnStart();
+
             this.refreshStatus();
             this._logWindow.displayAutoAffectedStatus(battler);
-            this._logWindow.displayRegeneration(battler);
             // TODO: What if the battler becomes inactive?
             this._subject = battler;
             this._turnEndSubject = battler;
