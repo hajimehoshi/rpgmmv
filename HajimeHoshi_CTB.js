@@ -173,6 +173,8 @@
         });
         var averageWpDelta = MAX_WP / AVERAGE_TIME / Math.sqrt(activeBattlers.length);
 
+        this._turnEndSubject = null;
+
         this._turnWp += averageWpDelta.clamp(0, MAX_WP)|0;
         if (this._turnWp >= MAX_WP) {
             this._turnWp -= MAX_WP;
@@ -185,7 +187,9 @@
                 this._logWindow.displayRegeneration(battler);
             }, this);
         }
-        if (this.checkBattleEnd()) {
+        if ($gameParty.isEmpty() || this.isAborting() ||
+            $gameParty.isAllDead() || $gameTroop.isAllDead()) {
+            this._phase = 'turnEnd';
             return;
         }
 
@@ -297,6 +301,7 @@
     };
 
     BattleManager.processEscape = function() {
+        // TODO: Escaping doesn't work well.
         $gameParty.removeBattleStates();
         $gameParty.performEscape();
         SoundManager.playEscape();
