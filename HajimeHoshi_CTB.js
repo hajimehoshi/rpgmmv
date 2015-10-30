@@ -39,30 +39,23 @@
     var MAX_WP = 65536;
     var AVERAGE_TIME = 60;
 
-    // TODO: This hides actors' states accidentally.
-    Window_BattleStatus.prototype.gaugeAreaWidth = function() {
-        return 400;
-    };
-
     Window_BattleStatus.prototype.drawGaugeAreaWithTp = function(rect, actor) {
-        this.drawActorHp(actor, rect.x + 0, rect.y, 97);
-        this.drawActorMp(actor, rect.x + 112, rect.y, 86);
-        this.drawActorTp(actor, rect.x + 213, rect.y, 86);
-        this.drawActorWp(actor, rect.x + 314, rect.y, 86);
+        this.drawActorHp(actor, rect.x + 0,   rect.y, 96);
+        this.drawActorMp(actor, rect.x + 111, rect.y, 80);
+        this.drawActorTp(actor, rect.x + 206, rect.y, 80);
+        this.drawActorWp(actor, rect.x + 301, rect.y, 29);
     };
 
     Window_BattleStatus.prototype.drawGaugeAreaWithoutTp = function(rect, actor) {
-        this.drawActorHp(actor, rect.x + 0, rect.y, 130);
-        this.drawActorMp(actor, rect.x + 145,  rect.y, 120);
-        this.drawActorWp(actor, rect.x + 280,  rect.y, 120);
+        this.drawActorHp(actor, rect.x + 0,    rect.y, 108);
+        this.drawActorMp(actor, rect.x + 123,  rect.y, 96);
+        this.drawActorWp(actor, rect.x + 234,  rect.y, 96);
     };
     
     Window_Base.prototype.drawActorWp = function(actor, x, y, width) {
         var color1 = this.textColor(14);
         var color2 = this.textColor(6);
         this.drawGauge(x, y, width, actor.wpRate(), color1, color2);
-        this.changeTextColor(this.systemColor());
-        this.drawText("Time", x, y, 88);
     };
 
     //
