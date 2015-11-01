@@ -13,31 +13,42 @@
 // limitations under the License.
 
 /*:
- * @plugindesc Battle music stack
+ * @plugindesc Battle BGM stack
  * @author Hajime Hoshi
  *
- * @help This plugin offers a stack for battle music.
- * This is useful when you want to change the battle music temporarily.
- * The stack state is not saved as a saved file, so do not save while the stack is used.
+ * @help This plugin offers a stack for battle BGM.
+ * This is useful when you want to change the battle BGM temporarily.
  *
  * Plugin Command:
- *   BattleMusicStack push # Push the current battle music to the stack.
- *   BattleMusicStack pop  # Pop from the battle music stack and set it as current.
+ *   BattleBGMStack push # Push the current battle BGM to the stack.
+ *   BattleBGMStack pop  # Pop from the battle BGM stack and set it as current.
  */
 
 (function() {
-    var stack = [];
+    Game_System.prototype.pushBattleBgmStack = function() {
+        if (this._battleBgmStack === undefined) {
+            this._battleBgmStack = [];
+        }
+        this._battleBgmStack.push(this.battleBgm());
+    };
+
+    Game_System.prototype.popBattleBgmStack = function() {
+        if (this._battleBgmStack === undefined) {
+            this._battleBgmStack = [];
+        }
+        this.setBattleBgm(this._battleBgmStack.pop());
+    };
 
     var _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
     Game_Interpreter.prototype.pluginCommand = function(command, args) {
         _Game_Interpreter_pluginCommand.call(this, command, args);
-        if (command === 'BattleMusicStack') {
+        if (command === 'BattleBGMStack') {
             switch (args[0]) {
             case 'push':
-                stack.push($gameSystem.battleBgm());
+                $gameSystem.pushBattleBgmStack();
                 break;
             case 'pop':
-                $gameSystem.setBattleBgm(stack.pop());
+                $gameSystem.popBattleBgmStack();
                 break;
             }
         }
