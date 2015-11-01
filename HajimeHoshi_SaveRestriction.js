@@ -20,7 +20,7 @@
  * @desc 'Save' is forbidden by default if this value is 0. Otherwise 'save' is admitted by default.
  * @default 1
  *
- * @help This plugin forbids 'save' command in maps those have '<save_disabled>' meta data
+ * @help This plugin forbids 'save' command in maps with '<save_disabled>' meta data
  * and admits maps with <save_enabled>.
  * If a map doesn't have neither of meta data, it follows the default value.
  */
