@@ -52,7 +52,6 @@
             case 2:
                 if (ch === '}') {
                     state = 0;
-                    console.log(currentLiteral);
                     newText += eval(currentLiteral);
                     break;
                 }
