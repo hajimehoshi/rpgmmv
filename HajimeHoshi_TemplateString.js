@@ -22,7 +22,7 @@
  *
  * This template string is NOT compatible with ES6 template literal.
  * For example, in this template string, braces ('{' and '}') must be paired,
- * but ES6 doesn't request that.
+ * but ES6 doesn't require that.
  */
 
 (function() {
