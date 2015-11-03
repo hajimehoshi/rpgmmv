@@ -52,7 +52,8 @@
             case 2:
                 if (ch === '}') {
                     state = 0;
-                    newText += eval(currentLiteral);
+                    // Indirect eval call to use the global context.
+                    newText += (0, eval)(currentLiteral);
                     break;
                 }
                 if (ch === '{') {
