@@ -18,7 +18,7 @@
  *
  * @help This plugin offers template string feature like ES6.
  * You can use ${[JavaScript literal]} at a text message.
- * Templates is evaluated ahead of resolving escape characters (like \N[...]).
+ * Template strings are evaluated ahead of resolving escape characters (like \N[...]).
  *
  * This template string is NOT compatible with ES6 template literal.
  * For example, in this template string, braces ('{' and '}') must be paired,
