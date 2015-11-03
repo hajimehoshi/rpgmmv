@@ -72,6 +72,10 @@
                 break;
             }
         }
+        if (state === 1) {
+            newText += '$';
+            state = 0;
+        }
         if (state !== 0) {
             throw 'syntax error: braces are not closed correctly?'
         }
