@@ -26,6 +26,8 @@
  */
 
 (function() {
+    'use strict';
+
     var parameters = PluginManager.parameters('HajimeHoshi_SaveRestriction');
     var defaultValue = true;
     if (parameters['Default Value'] !== undefined) {

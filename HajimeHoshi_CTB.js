@@ -28,6 +28,8 @@
  */
 
 (function() {
+    'use strict';
+
     var parameters = PluginManager.parameters('HajimeHoshi_CTB');
     // TODO: Consider traits (see attackSpped()).
     var formula = String(parameters['Formula'] || 'a.agi / (battlers.reduce(function(p, b) { return p + b.agi; }, 0) / battlers.length)');

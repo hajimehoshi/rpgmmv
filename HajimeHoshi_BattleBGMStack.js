@@ -25,6 +25,8 @@
  */
 
 (function() {
+    'use strict';
+
     Game_System.prototype.pushBattleBgmStack = function() {
         if (this._battleBgmStack === undefined) {
             this._battleBgmStack = [];

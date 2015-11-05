@@ -25,6 +25,8 @@
  */
 
 (function() {
+    'use strict';
+
     var parameters = PluginManager.parameters('HajimeHoshi_EscapeAsActorCommand');
     var rate = Number(parameters['Rate'] || 1);
 

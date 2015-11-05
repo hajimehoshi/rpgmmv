@@ -26,6 +26,8 @@
  */
 
 (function() {
+    'use strict';
+
     var parameters = PluginManager.parameters('HajimeHoshi_SettingLocale');
     var locale = (parameters['Locale'] || $dataSytem.locale);
 

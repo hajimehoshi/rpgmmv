@@ -26,6 +26,8 @@
  */
 
 (function() {
+    'use strict';
+
     function evalTemplateStrings(text) {
         var state = 0;
         var newText = '';
