@@ -39,6 +39,7 @@
     //
 
     var MAX_WP = 65536;
+    var REGENERATION_WP = MAX_WP * 3 / 4;
     var AVERAGE_TIME = 60;
 
     Window_BattleStatus.prototype.drawGaugeAreaWithTp = function(rect, actor) {
@@ -181,12 +182,6 @@
             this._turnWp -= MAX_WP;
             // TODO: Check events work correctly.
             $gameTroop.increaseTurn();
-            activeBattlers.forEach(function(battler) {
-                battler.onRegeneration();
-                this.refreshStatus();
-                this._logWindow.displayAutoAffectedStatus(battler);
-                this._logWindow.displayRegeneration(battler);
-            }, this);
         }
         if ($gameParty.isEmpty() || this.isAborting() ||
             $gameParty.isAllDead() || $gameTroop.isAllDead()) {
@@ -202,8 +197,16 @@
             activeBattlers.forEach(function(battler) {
                 var rate = evalWpRate(battler, activeBattlers);
                 var delta = (averageWpDelta * rate).clamp(0, MAX_WP)|0;
+                var oldWp = battler.wp;
                 battler.gainWp(delta);
-            });
+                var newWp = battler.wp;
+                if (oldWp < REGENERATION_WP && newWp >= REGENERATION_WP) {
+                    battler.onRegeneration();
+                    this.refreshStatus();
+                    this._logWindow.displayAutoAffectedStatus(battler);
+                    this._logWindow.displayRegeneration(battler);
+                }
+            }, this);
         }
         // TODO: Sort battlers here?
         activeBattlers.some(function(battler) {
