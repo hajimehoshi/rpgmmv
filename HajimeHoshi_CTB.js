@@ -117,6 +117,7 @@
     };
 
     Game_Battler.prototype.onRegeneration = function() {
+        this.clearResult();
         this.regenerateAll();
     };
 
@@ -201,10 +202,16 @@
                 battler.gainWp(delta);
                 var newWp = battler.wp;
                 if (oldWp < REGENERATION_WP && newWp >= REGENERATION_WP) {
+                    var wasAlive = battler.isAlive();
                     battler.onRegeneration();
                     this.refreshStatus();
                     this._logWindow.displayAutoAffectedStatus(battler);
                     this._logWindow.displayRegeneration(battler);
+                    if (wasAlive && !battler.isAlive()) {
+                        for (var i = 0; i < 4; i++) {
+                            this._logWindow.push('wait');
+                        }
+                    }
                 }
             }, this);
         }
