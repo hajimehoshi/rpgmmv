@@ -69,9 +69,10 @@
     };
 
     Window_BattleTurns.prototype.makeCommandList = function() {
-        this._battlerNames.forEach(function(name) {
+        for (var i = 0; i < this._battlerNames.length; i++) {
+            var name = this._battlerNames[i];
             this.addCommand(name, '');
-        }, this);
+        }
     };
 
     //
@@ -255,7 +256,7 @@
             return;
         }
 
-        var battlers = calcTurns(this.allBattleMembers(), this._turnsWindow.numVisibleRows() + 1);
+        var battlers = calcTurns(this.allBattleMembers(), this._turnsWindow.numVisibleRows());
         this._turnsWindow.setBattlers(battlers);
         this._turnsWindow.refresh();
 
