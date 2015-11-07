@@ -38,6 +38,69 @@
     var AVERAGE_TIME = 60;
 
     //
+    // Window_BattleTurns
+    //
+
+    function Window_BattleTurns() {
+        this.initialize.apply(this, arguments);
+    }
+
+    Window_BattleTurns.prototype = Object.create(Window_Command.prototype);
+    Window_BattleTurns.prototype.constructor = Window_BattleTurns;
+
+    Window_BattleTurns.prototype.initialize = function() {
+        this._battlerNames = [];
+        var x = Graphics.boxWidth - this.windowWidth();
+        var y = 0;
+        Window_Command.prototype.initialize.call(this, x, y);
+        this.openness = 0;
+        this.deactivate();
+        this.setBackgroundType(1);
+        this.refresh();
+    };
+
+    Window_BattleTurns.prototype.numVisibleRows = function() {
+        return 5;
+    };
+
+    Window_BattleTurns.prototype.setBattlers = function(battlers) {
+        this._battlerNames = battlers.map(function(battler) {
+            return battler.name();
+        });
+    };
+
+    Window_BattleTurns.prototype.makeCommandList = function() {
+        this._battlerNames.forEach(function(name) {
+            this.addCommand(name, '');
+        }, this);
+    };
+
+    //
+    // Use Window_BattleTurns
+    //
+
+    Scene_Battle.prototype.createTurnsWindow = function() {
+        this._turnsWindow = new Window_BattleTurns();
+        this.addWindow(this._turnsWindow);
+    };
+
+    var _Scene_Battle_createAllWindows = Scene_Battle.prototype.createAllWindows;
+    Scene_Battle.prototype.createAllWindows = function() {
+        _Scene_Battle_createAllWindows.call(this);
+        this.createTurnsWindow();
+    };
+
+    var _Scene_Battle_createDisplayObjects = Scene_Battle.prototype.createDisplayObjects;
+    Scene_Battle.prototype.createDisplayObjects = function() {
+        _Scene_Battle_createDisplayObjects.call(this);
+        BattleManager.setTurnsWindow(this._turnsWindow);
+    };
+
+    BattleManager.setTurnsWindow = function(turnsWindow) {
+        this._turnsWindow = turnsWindow;
+    };
+
+    //
     // 'wp' parameter
     //
 
@@ -95,6 +158,7 @@
         _BattleManager_initMembers.call(this);
         this._turnWp = 0;
         this._turnEndSubject = null;
+        this._turnsWindow = null;
     };
 
     var _BattleManager_startBattle = BattleManager.startBattle;
@@ -141,8 +205,7 @@
         var activeBattlers = allBattleMembers.filter(function(battler) {
             return battler.canMove();
         });
-        // TODO: For dry running, do we need this devided by sqrt(activeBattlers.length)?
-        var averageWpDelta = MAX_WP / AVERAGE_TIME / Math.sqrt(activeBattlers.length);
+        var averageWpDelta = MAX_WP / AVERAGE_TIME;
 
         var wps = {};
         for (var i = 0; i < activeBattlers.length; i++) {
@@ -170,12 +233,14 @@
     };
 
     BattleManager.updateWaiting = function() {
+        this._turnsWindow.open();
+
         $gameParty.requestMotionRefresh();
 
         var activeBattlers = this.allBattleMembers().filter(function(battler) {
             return battler.canMove();
         });
-        var averageWpDelta = MAX_WP / AVERAGE_TIME / Math.sqrt(activeBattlers.length);
+        var averageWpDelta = MAX_WP / AVERAGE_TIME;
 
         this._turnEndSubject = null;
 
@@ -192,6 +257,8 @@
         }
 
         var battlers = calcTurns(this.allBattleMembers());
+        this._turnsWindow.setBattlers(battlers);
+        this._turnsWindow.refresh();
 
         // Actual updating waiting points.
         do {
@@ -276,6 +343,12 @@
 
     BattleManager.startTurn = function() {
         // Do nothing. This can be reached when 'escape' command is selected.
+    };
+
+    var _BattleManager_endBattle = BattleManager.endBattle;
+    BattleManager.endBattle = function(result) {
+        _BattleManager_endBattle.call(this, result);
+        this._turnsWindow.close();
     };
 
     Sprite_Actor.prototype.updateTargetPosition = function() {
