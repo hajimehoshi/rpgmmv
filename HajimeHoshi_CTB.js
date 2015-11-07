@@ -34,13 +34,12 @@
     // TODO: Consider traits (see attackSpped()).
     var formula = String(parameters['Formula'] || 'a.agi / (battlers.reduce(function(p, b) { return p + b.agi; }, 0) / battlers.length)');
 
+    var MAX_WP = 65536;
+    var AVERAGE_TIME = 60;
+
     //
     // UI
     //
-
-    var MAX_WP = 65536;
-    var REGENERATION_WP = MAX_WP * 3 / 4;
-    var AVERAGE_TIME = 60;
 
     Window_BattleStatus.prototype.drawGaugeAreaWithTp = function(rect, actor) {
         this.drawActorHp(actor, rect.x + 0,   rect.y, 96);
@@ -91,11 +90,6 @@
         this.setWp(Math.randomInt(MAX_WP / 2));
     };
 
-    Game_Battler.prototype.gainWp = function(value) {
-        // TODO: Invert |value| if needed (see gainTp())
-        this.setWp(this.wp + value);
-    };
-
     var _Game_BattlerBase_die = Game_BattlerBase.prototype.die;
     Game_BattlerBase.prototype.die = function() {
         this._wp = 0;
@@ -106,19 +100,17 @@
     // System
     //
 
+    // TODO: This affects onTurnEndOnMap. Check that works correctly.
     Game_Battler.prototype.onTurnEnd = function() {
         this.clearResult();
     };
 
     Game_Battler.prototype.onTurnStart = function() {
+        this.clearResult();
+        this.regenerateAll();
         this.updateStateTurns();
         this.updateBuffTurns();
         this.removeStatesAuto(2);
-    };
-
-    Game_Battler.prototype.onRegeneration = function() {
-        this.clearResult();
-        this.regenerateAll();
     };
 
     var _BattleManager_initMembers = BattleManager.initMembers;
@@ -199,20 +191,7 @@
                 var rate = evalWpRate(battler, activeBattlers);
                 var delta = (averageWpDelta * rate).clamp(0, MAX_WP)|0;
                 var oldWp = battler.wp;
-                battler.gainWp(delta);
-                var newWp = battler.wp;
-                if (oldWp < REGENERATION_WP && newWp >= REGENERATION_WP) {
-                    var wasAlive = battler.isAlive();
-                    battler.onRegeneration();
-                    this.refreshStatus();
-                    this._logWindow.displayAutoAffectedStatus(battler);
-                    this._logWindow.displayRegeneration(battler);
-                    if (wasAlive && !battler.isAlive()) {
-                        for (var i = 0; i < 4; i++) {
-                            this._logWindow.push('wait');
-                        }
-                    }
-                }
+                battler.setWp(battler.wp + delta);
             }, this);
         }
         // TODO: Sort battlers here?
@@ -220,9 +199,17 @@
             if (battler.wp < MAX_WP) {
                 return false;
             }
+            var wasAlive = battler.isAlive();
             battler.onTurnStart();
             this.refreshStatus();
             this._logWindow.displayAutoAffectedStatus(battler);
+            this._logWindow.displayRegeneration(battler);
+            if (wasAlive && !battler.isAlive()) {
+                for (var i = 0; i < 4; i++) {
+                    this._logWindow.push('wait');
+                }
+            }
+
             // TODO: What if the battler becomes inactive?
             this._subject = battler;
             this._turnEndSubject = battler;
