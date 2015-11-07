@@ -23,7 +23,6 @@
  * @help This plugin offers Count Time Battle system.
  * A battler has a 'waiting point' and this increases for each frame.
  * A battler becames actionable when its waiting point reaches maximum (65536).
- * Note that this is not 'ATB' but 'CTB' because time stops for any actions.
  * I used EllyeSimpleATB.js as reference (http://pastebin.com/fhGC2Sn7).
  */
 
@@ -55,7 +54,7 @@
         Window_Command.prototype.initialize.call(this, x, y);
         this.openness = 0;
         this.deactivate();
-        this.setBackgroundType(1);
+        this.setBackgroundType(2);
         this.refresh();
     };
 
@@ -201,7 +200,7 @@
         return Math.max(eval(formula), 0);
     }
 
-    function calcTurns(allBattleMembers) {
+    function calcTurns(allBattleMembers, num) {
         var activeBattlers = allBattleMembers.filter(function(battler) {
             return battler.canMove();
         });
@@ -220,7 +219,7 @@
                     wps[i] -= MAX_WP;
                 }
             }
-            if (battlers.length >= 6) {
+            if (battlers.length >= num) {
                 break;
             }
             for (var i = 0; i < activeBattlers.length; i++) {
@@ -228,7 +227,7 @@
                 wps[i] += (averageWpDelta * rate).clamp(0, MAX_WP)|0;;
             }
         }
-        battlers.length = 6;
+        battlers.length = num;
         return battlers;
     };
 
@@ -256,7 +255,7 @@
             return;
         }
 
-        var battlers = calcTurns(this.allBattleMembers());
+        var battlers = calcTurns(this.allBattleMembers(), this._turnsWindow.numVisibleRows() + 1);
         this._turnsWindow.setBattlers(battlers);
         this._turnsWindow.refresh();
 
