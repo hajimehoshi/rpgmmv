@@ -38,29 +38,6 @@
     var AVERAGE_TIME = 60;
 
     //
-    // UI
-    //
-
-    Window_BattleStatus.prototype.drawGaugeAreaWithTp = function(rect, actor) {
-        this.drawActorHp(actor, rect.x + 0,   rect.y, 96);
-        this.drawActorMp(actor, rect.x + 111, rect.y, 80);
-        this.drawActorTp(actor, rect.x + 206, rect.y, 80);
-        this.drawActorWp(actor, rect.x + 301, rect.y, 29);
-    };
-
-    Window_BattleStatus.prototype.drawGaugeAreaWithoutTp = function(rect, actor) {
-        this.drawActorHp(actor, rect.x + 0,    rect.y, 108);
-        this.drawActorMp(actor, rect.x + 123,  rect.y, 96);
-        this.drawActorWp(actor, rect.x + 234,  rect.y, 96);
-    };
-    
-    Window_Base.prototype.drawActorWp = function(actor, x, y, width) {
-        var color1 = this.textColor(14);
-        var color2 = this.textColor(6);
-        this.drawGauge(x, y, width, actor.wpRate(), color1, color2);
-    };
-
-    //
     // 'wp' parameter
     //
 
@@ -160,6 +137,38 @@
         return Math.max(eval(formula), 0);
     }
 
+    function calcTurns(allBattleMembers) {
+        var activeBattlers = allBattleMembers.filter(function(battler) {
+            return battler.canMove();
+        });
+        // TODO: For dry running, do we need this devided by sqrt(activeBattlers.length)?
+        var averageWpDelta = MAX_WP / AVERAGE_TIME / Math.sqrt(activeBattlers.length);
+
+        var wps = {};
+        for (var i = 0; i < activeBattlers.length; i++) {
+            wps[i] = activeBattlers[i].wp;
+        }
+
+        var battlers = [];
+        for (;;) {
+            for (var i = 0; i < activeBattlers.length; i++) {
+                if (wps[i] >= MAX_WP) {
+                    battlers.push(activeBattlers[i]);
+                    wps[i] -= MAX_WP;
+                }
+            }
+            if (battlers.length >= 6) {
+                break;
+            }
+            for (var i = 0; i < activeBattlers.length; i++) {
+                var rate = evalWpRate(activeBattlers[i], activeBattlers);
+                wps[i] += (averageWpDelta * rate).clamp(0, MAX_WP)|0;;
+            }
+        }
+        battlers.length = 6;
+        return battlers;
+    };
+
     BattleManager.updateWaiting = function() {
         $gameParty.requestMotionRefresh();
 
@@ -182,47 +191,43 @@
             return;
         }
 
-        var someoneHasTurn = activeBattlers.some(function(battler) {
-            return battler.wp >= MAX_WP;
-        });
+        var battlers = calcTurns(this.allBattleMembers());
 
-        if (!someoneHasTurn) {
+        // Actual updating waiting points.
+        do {
             activeBattlers.forEach(function(battler) {
                 var rate = evalWpRate(battler, activeBattlers);
                 var delta = (averageWpDelta * rate).clamp(0, MAX_WP)|0;
-                var oldWp = battler.wp;
                 battler.setWp(battler.wp + delta);
-            }, this);
-        }
-        // TODO: Sort battlers here?
-        activeBattlers.some(function(battler) {
-            if (battler.wp < MAX_WP) {
-                return false;
-            }
-            var wasAlive = battler.isAlive();
-            battler.onTurnStart();
-            this.refreshStatus();
-            this._logWindow.displayAutoAffectedStatus(battler);
-            this._logWindow.displayRegeneration(battler);
-            if (wasAlive && !battler.isAlive()) {
-                for (var i = 0; i < 4; i++) {
-                    this._logWindow.push('wait');
-                }
-            }
+            });
+        } while (activeBattlers.every(function(battler) {
+            return battler.wp < MAX_WP;
+        }));
 
-            // TODO: What if the battler becomes inactive?
-            this._subject = battler;
-            this._turnEndSubject = battler;
-            battler.makeActions();
-            if (battler.isActor() && battler.canInput()) {
-                battler.setActionState('inputting');
-                this._actorIndex = battler.index();
-                this._phase = 'input';
-                return true;
+        var battler = battlers[0];
+        var wasAlive = battler.isAlive();
+        battler.onTurnStart();
+        this.refreshStatus();
+        this._logWindow.displayAutoAffectedStatus(battler);
+        this._logWindow.displayRegeneration(battler);
+        if (wasAlive && !battler.isAlive()) {
+            for (var i = 0; i < 4; i++) {
+                this._logWindow.push('wait');
             }
-            this._phase = 'turn';
-            return true;
-        }, this);
+        }
+
+        // TODO: What if the battler becomes inactive?
+        this._subject = battler;
+        this._turnEndSubject = battler;
+        battler.makeActions();
+        if (battler.isActor() && battler.canInput()) {
+            battler.setActionState('inputting');
+            this._actorIndex = battler.index();
+            this._phase = 'input';
+            this.refreshStatus();
+            return;
+        }
+        this._phase = 'turn';
         this.refreshStatus();
     };
 
