@@ -34,7 +34,7 @@
     var formula = String(parameters['Formula'] || 'a.agi / (battlers.reduce(function(p, b) { return p + b.agi; }, 0) / battlers.length)');
 
     var MAX_WP = 65536;
-    var AVERAGE_TIME = 60;
+    var AVERAGE_WP_DELTA = MAX_WP / 60;
 
     //
     // Window_BattleTurns
@@ -201,12 +201,7 @@
         return Math.max(eval(formula), 0);
     }
 
-    function calcTurns(allBattleMembers, num) {
-        var activeBattlers = allBattleMembers.filter(function(battler) {
-            return battler.canMove();
-        });
-        var averageWpDelta = MAX_WP / AVERAGE_TIME;
-
+    function calcTurns(activeBattlers, num) {
         var wps = {};
         for (var i = 0; i < activeBattlers.length; i++) {
             wps[i] = activeBattlers[i].wp;
@@ -225,11 +220,29 @@
             }
             for (var i = 0; i < activeBattlers.length; i++) {
                 var rate = evalWpRate(activeBattlers[i], activeBattlers);
-                wps[i] += (averageWpDelta * rate).clamp(0, MAX_WP)|0;;
+                wps[i] += (AVERAGE_WP_DELTA * rate).clamp(0, MAX_WP)|0;;
             }
         }
         battlers.length = num;
         return battlers;
+    };
+
+    BattleManager.activeBattleMembers = function() {
+        return this.allBattleMembers().filter(function(battler) {
+            return battler.canMove();
+        });
+    };
+
+    function proceedTilSomeoneHasTurn(activeBattlers) {
+        do {
+            activeBattlers.forEach(function(battler) {
+                var rate = evalWpRate(battler, activeBattlers);
+                var delta = (AVERAGE_WP_DELTA * rate).clamp(0, MAX_WP)|0;
+                battler.setWp(battler.wp + delta);
+            });
+        } while (activeBattlers.every(function(battler) {
+            return battler.wp < MAX_WP;
+        }));
     };
 
     BattleManager.updateWaiting = function() {
@@ -237,14 +250,9 @@
 
         $gameParty.requestMotionRefresh();
 
-        var activeBattlers = this.allBattleMembers().filter(function(battler) {
-            return battler.canMove();
-        });
-        var averageWpDelta = MAX_WP / AVERAGE_TIME;
-
         this._turnEndSubject = null;
 
-        this._turnWp += averageWpDelta.clamp(0, MAX_WP)|0;
+        this._turnWp += AVERAGE_WP_DELTA|0;
         if (this._turnWp >= MAX_WP) {
             this._turnWp -= MAX_WP;
             // TODO: Check events work correctly.
@@ -256,20 +264,12 @@
             return;
         }
 
-        var battlers = calcTurns(this.allBattleMembers(), this._turnsWindow.numVisibleRows());
+        // TODO: It would be much better if the turns are updated on selecting a skill of an actor.
+        var battlers = calcTurns(this.activeBattleMembers(), this._turnsWindow.numVisibleRows());
         this._turnsWindow.setBattlers(battlers);
         this._turnsWindow.refresh();
 
-        // Actual updating waiting points.
-        do {
-            activeBattlers.forEach(function(battler) {
-                var rate = evalWpRate(battler, activeBattlers);
-                var delta = (averageWpDelta * rate).clamp(0, MAX_WP)|0;
-                battler.setWp(battler.wp + delta);
-            });
-        } while (activeBattlers.every(function(battler) {
-            return battler.wp < MAX_WP;
-        }));
+        proceedTilSomeoneHasTurn(this.activeBattleMembers());
 
         var battler = battlers[0];
         var wasAlive = battler.isAlive();
