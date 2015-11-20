@@ -47,6 +47,10 @@
     };
 
     Game_Map.prototype.scaleForAirship = function() {
+        // |_scaleForAirship| may not be defined when loading an existing data.
+        if (typeof this._scaleForAirship === 'undefined') {
+            this._scaleForAirship = 1;
+        }
         return this._scaleForAirship;
     };
 
