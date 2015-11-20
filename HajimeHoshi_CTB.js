@@ -23,7 +23,6 @@
  * @help This plugin offers Count Time Battle system.
  * A battler has a 'waiting point' and this increases for each frame.
  * A battler becames actionable when its waiting point reaches maximum (65536).
- * Note that this is not 'ATB' but 'CTB' because time stops for any actions.
  * I used EllyeSimpleATB.js as reference (http://pastebin.com/fhGC2Sn7).
  */
 
@@ -35,29 +34,70 @@
     var formula = String(parameters['Formula'] || 'a.agi / (battlers.reduce(function(p, b) { return p + b.agi; }, 0) / battlers.length)');
 
     var MAX_WP = 65536;
-    var AVERAGE_TIME = 60;
+    var AVERAGE_WP_DELTA = MAX_WP / 60;
 
     //
-    // UI
+    // Window_BattleTurns
     //
 
-    Window_BattleStatus.prototype.drawGaugeAreaWithTp = function(rect, actor) {
-        this.drawActorHp(actor, rect.x + 0,   rect.y, 96);
-        this.drawActorMp(actor, rect.x + 111, rect.y, 80);
-        this.drawActorTp(actor, rect.x + 206, rect.y, 80);
-        this.drawActorWp(actor, rect.x + 301, rect.y, 29);
+    function Window_BattleTurns() {
+        this.initialize.apply(this, arguments);
+    }
+
+    Window_BattleTurns.prototype = Object.create(Window_Command.prototype);
+    Window_BattleTurns.prototype.constructor = Window_BattleTurns;
+
+    Window_BattleTurns.prototype.initialize = function() {
+        this._battlerNames = [];
+        var x = Graphics.boxWidth - this.windowWidth();
+        var y = 0;
+        Window_Command.prototype.initialize.call(this, x, y);
+        this.openness = 0;
+        this.deactivate();
+        this.setBackgroundType(2);
+        this.refresh();
     };
 
-    Window_BattleStatus.prototype.drawGaugeAreaWithoutTp = function(rect, actor) {
-        this.drawActorHp(actor, rect.x + 0,    rect.y, 108);
-        this.drawActorMp(actor, rect.x + 123,  rect.y, 96);
-        this.drawActorWp(actor, rect.x + 234,  rect.y, 96);
+    Window_BattleTurns.prototype.numVisibleRows = function() {
+        return 5;
     };
-    
-    Window_Base.prototype.drawActorWp = function(actor, x, y, width) {
-        var color1 = this.textColor(14);
-        var color2 = this.textColor(6);
-        this.drawGauge(x, y, width, actor.wpRate(), color1, color2);
+
+    Window_BattleTurns.prototype.setBattlers = function(battlers) {
+        this._battlerNames = battlers.map(function(battler) {
+            return battler.name();
+        });
+    };
+
+    Window_BattleTurns.prototype.makeCommandList = function() {
+        for (var i = 0; i < this._battlerNames.length; i++) {
+            var name = this._battlerNames[i];
+            this.addCommand(name, '');
+        }
+    };
+
+    //
+    // Use Window_BattleTurns
+    //
+
+    Scene_Battle.prototype.createTurnsWindow = function() {
+        this._turnsWindow = new Window_BattleTurns();
+        this.addWindow(this._turnsWindow);
+    };
+
+    var _Scene_Battle_createAllWindows = Scene_Battle.prototype.createAllWindows;
+    Scene_Battle.prototype.createAllWindows = function() {
+        _Scene_Battle_createAllWindows.call(this);
+        this.createTurnsWindow();
+    };
+
+    var _Scene_Battle_createDisplayObjects = Scene_Battle.prototype.createDisplayObjects;
+    Scene_Battle.prototype.createDisplayObjects = function() {
+        _Scene_Battle_createDisplayObjects.call(this);
+        BattleManager.setTurnsWindow(this._turnsWindow);
+    };
+
+    BattleManager.setTurnsWindow = function(turnsWindow) {
+        this._turnsWindow = turnsWindow;
     };
 
     //
@@ -118,6 +158,7 @@
         _BattleManager_initMembers.call(this);
         this._turnWp = 0;
         this._turnEndSubject = null;
+        this._turnsWindow = null;
     };
 
     var _BattleManager_startBattle = BattleManager.startBattle;
@@ -160,17 +201,58 @@
         return Math.max(eval(formula), 0);
     }
 
-    BattleManager.updateWaiting = function() {
-        $gameParty.requestMotionRefresh();
+    function calcTurns(activeBattlers, num) {
+        var wps = {};
+        for (var i = 0; i < activeBattlers.length; i++) {
+            wps[i] = activeBattlers[i].wp;
+        }
 
-        var activeBattlers = this.allBattleMembers().filter(function(battler) {
+        var battlers = [];
+        for (;;) {
+            for (var i = 0; i < activeBattlers.length; i++) {
+                if (wps[i] >= MAX_WP) {
+                    battlers.push(activeBattlers[i]);
+                    wps[i] -= MAX_WP;
+                }
+            }
+            if (battlers.length >= num) {
+                break;
+            }
+            for (var i = 0; i < activeBattlers.length; i++) {
+                var rate = evalWpRate(activeBattlers[i], activeBattlers);
+                wps[i] += (AVERAGE_WP_DELTA * rate).clamp(0, MAX_WP)|0;;
+            }
+        }
+        battlers.length = num;
+        return battlers;
+    };
+
+    BattleManager.activeBattleMembers = function() {
+        return this.allBattleMembers().filter(function(battler) {
             return battler.canMove();
         });
-        var averageWpDelta = MAX_WP / AVERAGE_TIME / Math.sqrt(activeBattlers.length);
+    };
+
+    function proceedTilSomeoneHasTurn(activeBattlers) {
+        do {
+            activeBattlers.forEach(function(battler) {
+                var rate = evalWpRate(battler, activeBattlers);
+                var delta = (AVERAGE_WP_DELTA * rate).clamp(0, MAX_WP)|0;
+                battler.setWp(battler.wp + delta);
+            });
+        } while (activeBattlers.every(function(battler) {
+            return battler.wp < MAX_WP;
+        }));
+    };
+
+    BattleManager.updateWaiting = function() {
+        this._turnsWindow.open();
+
+        $gameParty.requestMotionRefresh();
 
         this._turnEndSubject = null;
 
-        this._turnWp += averageWpDelta.clamp(0, MAX_WP)|0;
+        this._turnWp += AVERAGE_WP_DELTA|0;
         if (this._turnWp >= MAX_WP) {
             this._turnWp -= MAX_WP;
             // TODO: Check events work correctly.
@@ -182,47 +264,37 @@
             return;
         }
 
-        var someoneHasTurn = activeBattlers.some(function(battler) {
-            return battler.wp >= MAX_WP;
-        });
+        // TODO: It would be much better if the turns are updated on selecting a skill of an actor.
+        var battlers = calcTurns(this.activeBattleMembers(), this._turnsWindow.numVisibleRows());
+        this._turnsWindow.setBattlers(battlers);
+        this._turnsWindow.refresh();
 
-        if (!someoneHasTurn) {
-            activeBattlers.forEach(function(battler) {
-                var rate = evalWpRate(battler, activeBattlers);
-                var delta = (averageWpDelta * rate).clamp(0, MAX_WP)|0;
-                var oldWp = battler.wp;
-                battler.setWp(battler.wp + delta);
-            }, this);
+        proceedTilSomeoneHasTurn(this.activeBattleMembers());
+
+        var battler = battlers[0];
+        var wasAlive = battler.isAlive();
+        battler.onTurnStart();
+        this.refreshStatus();
+        this._logWindow.displayAutoAffectedStatus(battler);
+        this._logWindow.displayRegeneration(battler);
+        if (wasAlive && !battler.isAlive()) {
+            for (var i = 0; i < 4; i++) {
+                this._logWindow.push('wait');
+            }
         }
-        // TODO: Sort battlers here?
-        activeBattlers.some(function(battler) {
-            if (battler.wp < MAX_WP) {
-                return false;
-            }
-            var wasAlive = battler.isAlive();
-            battler.onTurnStart();
-            this.refreshStatus();
-            this._logWindow.displayAutoAffectedStatus(battler);
-            this._logWindow.displayRegeneration(battler);
-            if (wasAlive && !battler.isAlive()) {
-                for (var i = 0; i < 4; i++) {
-                    this._logWindow.push('wait');
-                }
-            }
 
-            // TODO: What if the battler becomes inactive?
-            this._subject = battler;
-            this._turnEndSubject = battler;
-            battler.makeActions();
-            if (battler.isActor() && battler.canInput()) {
-                battler.setActionState('inputting');
-                this._actorIndex = battler.index();
-                this._phase = 'input';
-                return true;
-            }
-            this._phase = 'turn';
-            return true;
-        }, this);
+        // TODO: What if the battler becomes inactive?
+        this._subject = battler;
+        this._turnEndSubject = battler;
+        battler.makeActions();
+        if (battler.isActor() && battler.canInput()) {
+            battler.setActionState('inputting');
+            this._actorIndex = battler.index();
+            this._phase = 'input';
+            this.refreshStatus();
+            return;
+        }
+        this._phase = 'turn';
         this.refreshStatus();
     };
 
@@ -271,6 +343,12 @@
 
     BattleManager.startTurn = function() {
         // Do nothing. This can be reached when 'escape' command is selected.
+    };
+
+    var _BattleManager_endBattle = BattleManager.endBattle;
+    BattleManager.endBattle = function(result) {
+        _BattleManager_endBattle.call(this, result);
+        this._turnsWindow.close();
     };
 
     Sprite_Actor.prototype.updateTargetPosition = function() {
