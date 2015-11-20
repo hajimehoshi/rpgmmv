@@ -74,6 +74,20 @@
         return Game_Map_screenTileY.call(this) * this.scaleForAirship();
     };
 
+    Game_Map.prototype.canvasToMapX = function(y) {
+        var tileWidth = this.tileWidth() / this.scaleForAirship();
+        var originX = this._displayX * tileWidth;
+        var mapX = Math.floor((originX + y) / tileWidth);
+        return this.roundX(mapX);
+    };
+
+    Game_Map.prototype.canvasToMapY = function(y) {
+        var tileHeight = this.tileHeight() / this.scaleForAirship();
+        var originY = this._displayY * tileHeight;
+        var mapY = Math.floor((originY + y) / tileHeight);
+        return this.roundY(mapY);
+    };
+
     var Scene_Map_updateMain = Scene_Map.prototype.updateMain;
     Scene_Map.prototype.updateMain = function() {
         var airship = $gameMap.airship();
