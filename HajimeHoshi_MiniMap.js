@@ -27,6 +27,11 @@
 
     var miniMapBitmaps = {};
     var POSITION_RADIUS = 4;
+    var COLORS = {
+        'walk':    [255, 255, 255, 192],
+        'no_ship': [192, 192, 192, 192],
+        'other':   [128, 128, 128, 128],
+    };
 
     /**
      * Replaces the pixel data.
@@ -54,19 +59,18 @@
         var p = 0;
         for (var j = 0; j < $dataMap.height; j++) {
             for (var i = 0; i < $dataMap.width; i++) {
-                pixels[p]   = 255;
-                pixels[p+1] = 255;
-                pixels[p+2] = 255;
+                var color = null;
                 if ($gameMap.checkPassage(i, j, 0x0f)) {
-                    // Walkable
-                    pixels[p+3] = 192;
+                    color = COLORS['walk'];
                 } else if (!$gameMap.isShipPassable(i, j)) {
-                    // Not passable by ship
-                    pixels[p+3] = 128;
+                    color = COLORS['no_ship'];
                 } else {
-                    // Others
-                    pixels[p+3] = 64;
+                    color = COLORS['other'];
                 }
+                pixels[p]   = color[0];
+                pixels[p+1] = color[1];
+                pixels[p+2] = color[2];
+                pixels[p+3] = color[3];
                 p += 4;
             }
         }
