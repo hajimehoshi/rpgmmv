@@ -58,14 +58,12 @@
         this._scaleForAirship = scale;
     };
 
-    var Game_Player_centerX = Game_Player.prototype.centerX;
     Game_Player.prototype.centerX = function() {
-        return Game_Player_centerX.call(this) * $gameMap.scaleForAirship();
+        return (Graphics.width / ($gameMap.tileWidth() / $gameMap.scaleForAirship()) - 1) / 2.0;
     };
 
-    var Game_Player_centerY = Game_Player.prototype.centerY;
     Game_Player.prototype.centerY = function() {
-        return Game_Player_centerY.call(this) * $gameMap.scaleForAirship();
+        return (Graphics.height / ($gameMap.tileHeight() / $gameMap.scaleForAirship()) - 1) / 2.0;
     };
 
     var Game_Map_screenTileX = Game_Map.prototype.screenTileX;
@@ -92,12 +90,16 @@
         return this.roundY(mapY);
     };
 
-    var Scene_Map_updateMain = Scene_Map.prototype.updateMain;
     Scene_Map.prototype.updateMain = function() {
         var airship = $gameMap.airship();
         var wasHighest = airship.isHighest();
-        var wasInAirship = $gamePlayer.isInAirship();
-        Scene_Map_updateMain.call(this);
+
+        var active = this.isActive();
+        $gameMap.update(active);
+
+        // Center the player before calling $gamePlayer.update because
+        // airship.isHighest has been changed so that the player can move.
+        // Centering should be done before the player moves.
         $gameMap.setScaleForAirship(1);
         if ($gamePlayer.isInAirship()) {
             var rate = (airship.altitude() / airship.maxAltitude());
@@ -105,11 +107,13 @@
             if (!airship.isHighest() || !wasHighest) {
                 $gamePlayer.center($gamePlayer.x, $gamePlayer.y);
             }
-        } else if (wasInAirship) {
-            $gamePlayer.center($gamePlayer.x, $gamePlayer.y);
         }
         this._spriteset._tilemap.scale.x = 1 / $gameMap.scaleForAirship();
         this._spriteset._tilemap.scale.y = 1 / $gameMap.scaleForAirship();
+
+        $gamePlayer.update(active);
+        $gameTimer.update(active);
+        $gameScreen.update();
     };
 
 })();
