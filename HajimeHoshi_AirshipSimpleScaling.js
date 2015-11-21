@@ -90,6 +90,11 @@
         return this.roundY(mapY);
     };
 
+    Spriteset_Map.prototype.setTilemapScale = function(scaleX, scaleY) {
+        this._tilemap.scale.x = scaleX;
+        this._tilemap.scale.y = scaleY;
+    };
+
     Scene_Map.prototype.updateMain = function() {
         var airship = $gameMap.airship();
         var wasHighest = airship.isHighest();
@@ -108,9 +113,9 @@
                 $gamePlayer.center($gamePlayer.x, $gamePlayer.y);
             }
         }
-        this._spriteset._tilemap.scale.x = 1 / $gameMap.scaleForAirship();
-        this._spriteset._tilemap.scale.y = 1 / $gameMap.scaleForAirship();
-
+        var tilemapScale = 1 / $gameMap.scaleForAirship();
+        this._spriteset.setTilemapScale(tilemapScale, tilemapScale);
+        
         $gamePlayer.update(active);
         $gameTimer.update(active);
         $gameScreen.update();
