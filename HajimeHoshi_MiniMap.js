@@ -98,7 +98,6 @@
     };
 
     Spriteset_Map.prototype.updateMiniMap = function() {
-        console.log($gameMap.mapId());
         var miniMapBitmap = miniMapBitmaps[$gameMap.mapId()];
         if (!miniMapBitmap) {
             this._miniMapSprite.opaque = false;
