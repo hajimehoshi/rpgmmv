@@ -100,15 +100,10 @@
         Scene_Map_updateMain.call(this);
         $gameMap.setScaleForAirship(1);
         if ($gamePlayer.isInAirship()) {
-            if (!airship.isHighest()) {
-                var rate = (airship.altitude() / airship.maxAltitude());
-                $gameMap.setScaleForAirship(rate * maxScale + (1 - rate) * 1);
+            var rate = (airship.altitude() / airship.maxAltitude());
+            $gameMap.setScaleForAirship(rate * maxScale + (1 - rate) * 1);
+            if (!airship.isHighest() || !wasHighest) {
                 $gamePlayer.center($gamePlayer.x, $gamePlayer.y);
-            } else {
-                $gameMap.setScaleForAirship(maxScale);
-                if (!wasHighest) {
-                    $gamePlayer.center($gamePlayer.x, $gamePlayer.y);
-                }
             }
         } else if (wasInAirship) {
             $gamePlayer.center($gamePlayer.x, $gamePlayer.y);
