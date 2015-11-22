@@ -27,7 +27,8 @@
 
     var miniMapBitmaps = {};
 
-    var MINI_MAP_SIZE = 160;
+    var MINI_MAP_MARGIN = 16;
+    var MINI_MAP_SIZE = 184;
     var POSITION_RADIUS = 4;
     var COLORS = {
         'walk':  [192, 192, 192, 224],
@@ -124,8 +125,8 @@
         }
         var size = Math.max(miniMapBitmap.width, miniMapBitmap.height);
         var miniMapScale = MINI_MAP_SIZE / size;
-        var miniMapX = Graphics.width - miniMapBitmap.width * miniMapScale - 16;
-        var miniMapY = Graphics.height - miniMapBitmap.height * miniMapScale - 16;
+        var miniMapX = Graphics.width - miniMapBitmap.width * miniMapScale - MINI_MAP_MARGIN;
+        var miniMapY = Graphics.height - miniMapBitmap.height * miniMapScale - MINI_MAP_MARGIN;
         this._miniMapSprite.bitmap = miniMapBitmap;
         this._miniMapSprite.x = miniMapX;
         this._miniMapSprite.y = miniMapY;
