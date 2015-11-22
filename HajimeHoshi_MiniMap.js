@@ -27,12 +27,12 @@
 
     var miniMapBitmaps = {};
 
-    var MINI_MAP_SIZE = 128;
+    var MINI_MAP_SIZE = 160;
     var POSITION_RADIUS = 4;
     var COLORS = {
-        'walk':    [192, 192, 192, 224],
-        'no_ship': [255, 255, 255, 224],
-        'other':   [128, 128, 128, 192],
+        'walk':  [192, 192, 192, 224],
+        'cliff': [255, 255, 255, 224],
+        'other': [128, 128, 128, 192],
     };
 
     /**
@@ -47,6 +47,18 @@
         this._context.putImageData(imageData, 0, 0);
         this._setDirty();
     };
+
+    function isWater(gameMap, x, y) {
+        if (gameMap.isOverworld()) {
+            var tileId = gameMap.autotileType(x, y, 0);
+            if ([0, 1, 2, 3, 7].some(function(id) {
+                return id === tileId;
+            })) {
+                return true;
+            }
+        }
+        return gameMap.isShipPassable(x, y);
+    }
 
     var Scene_Map_onMapLoaded = Scene_Map.prototype.onMapLoaded;
     Scene_Map.prototype.onMapLoaded = function() {
@@ -64,8 +76,8 @@
                 var color = null;
                 if ($gameMap.checkPassage(i, j, 0x0f)) {
                     color = COLORS['walk'];
-                } else if (!$gameMap.isShipPassable(i, j)) {
-                    color = COLORS['no_ship'];
+                } else if (!isWater($gameMap, i, j)) {
+                    color = COLORS['cliff'];
                 } else {
                     color = COLORS['other'];
                 }
