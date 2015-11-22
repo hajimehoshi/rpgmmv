@@ -28,9 +28,9 @@
     var miniMapBitmaps = {};
     var POSITION_RADIUS = 4;
     var COLORS = {
-        'walk':    [255, 255, 255, 192],
-        'no_ship': [192, 192, 192, 192],
-        'other':   [128, 128, 128, 128],
+        'walk':    [192, 192, 192, 224],
+        'no_ship': [255, 255, 255, 224],
+        'other':   [128, 128, 128, 192],
     };
 
     /**
@@ -113,9 +113,10 @@
         this._miniMapSprite.bitmap = miniMapBitmap;
         this._miniMapSprite.x = miniMapX;
         this._miniMapSprite.y = miniMapY;
-        this._miniMapSprite.opaque = true;
         this._miniMapCurrentPositionSprite.x = miniMapX + $gamePlayer.x - POSITION_RADIUS;
         this._miniMapCurrentPositionSprite.y = miniMapY + $gamePlayer.y - POSITION_RADIUS;
+
+        this._miniMapSprite.opaque = true;
         this._miniMapCurrentPositionSprite.opaque = true;
     };
 
