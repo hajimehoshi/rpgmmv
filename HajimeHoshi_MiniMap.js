@@ -31,9 +31,9 @@
     var MINI_MAP_SIZE = 184;
     var POSITION_RADIUS = 4;
     var COLORS = {
-        'walk':  [192, 192, 192, 224],
-        'cliff': [255, 255, 255, 224],
-        'other': [128, 128, 128, 192],
+        'walk':     [192, 192, 192, 224],
+        'mountain': [255, 255, 255, 224],
+        'other':    [128, 128, 128, 192],
     };
 
     /**
@@ -78,7 +78,7 @@
                 if ($gameMap.checkPassage(i, j, 0x0f)) {
                     color = COLORS['walk'];
                 } else if (!isWater($gameMap, i, j)) {
-                    color = COLORS['cliff'];
+                    color = COLORS['mountain'];
                 } else {
                     color = COLORS['other'];
                 }
