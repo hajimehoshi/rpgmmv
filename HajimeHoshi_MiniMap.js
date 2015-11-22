@@ -119,8 +119,8 @@
     Spriteset_Map.prototype.updateMiniMap = function() {
         var miniMapBitmap = miniMapBitmaps[$gameMap.mapId()];
         if (!miniMapBitmap) {
-            this._miniMapSprite.opaque = false;
-            this._miniMapCurrentPositionSprite.opaque = false;
+            this._miniMapSprite.visible = false;
+            this._miniMapCurrentPositionSprite.visible = false;
             return;
         }
         var size = Math.max(miniMapBitmap.width, miniMapBitmap.height);
@@ -135,8 +135,8 @@
         this._miniMapCurrentPositionSprite.x = miniMapX + ($gamePlayer.x * miniMapScale) - POSITION_RADIUS;
         this._miniMapCurrentPositionSprite.y = miniMapY + ($gamePlayer.y * miniMapScale) - POSITION_RADIUS;
 
-        this._miniMapSprite.opaque = true;
-        this._miniMapCurrentPositionSprite.opaque = true;
+        this._miniMapSprite.visible = true;
+        this._miniMapCurrentPositionSprite.visible = true;
     };
 
 })();
