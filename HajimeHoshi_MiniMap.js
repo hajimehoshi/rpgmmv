@@ -26,6 +26,8 @@
     'use strict';
 
     var miniMapBitmaps = {};
+
+    var MINI_MAP_SIZE = 128;
     var POSITION_RADIUS = 4;
     var COLORS = {
         'walk':    [192, 192, 192, 224],
@@ -108,13 +110,17 @@
             this._miniMapCurrentPositionSprite.opaque = false;
             return;
         }
-        var miniMapX = Graphics.width - miniMapBitmap.width - 16;
-        var miniMapY = Graphics.height - miniMapBitmap.height - 16;
+        var size = Math.max(miniMapBitmap.width, miniMapBitmap.height);
+        var miniMapScale = MINI_MAP_SIZE / size;
+        var miniMapX = Graphics.width - miniMapBitmap.width * miniMapScale - 16;
+        var miniMapY = Graphics.height - miniMapBitmap.height * miniMapScale - 16;
         this._miniMapSprite.bitmap = miniMapBitmap;
         this._miniMapSprite.x = miniMapX;
         this._miniMapSprite.y = miniMapY;
-        this._miniMapCurrentPositionSprite.x = miniMapX + $gamePlayer.x - POSITION_RADIUS;
-        this._miniMapCurrentPositionSprite.y = miniMapY + $gamePlayer.y - POSITION_RADIUS;
+        this._miniMapSprite.scale.x = miniMapScale;
+        this._miniMapSprite.scale.y = miniMapScale;
+        this._miniMapCurrentPositionSprite.x = miniMapX + ($gamePlayer.x * miniMapScale) - POSITION_RADIUS;
+        this._miniMapCurrentPositionSprite.y = miniMapY + ($gamePlayer.y * miniMapScale) - POSITION_RADIUS;
 
         this._miniMapSprite.opaque = true;
         this._miniMapCurrentPositionSprite.opaque = true;
