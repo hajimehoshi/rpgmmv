@@ -52,7 +52,7 @@
     function isWater(gameMap, x, y) {
         if (gameMap.isOverworld()) {
             var tileId = gameMap.autotileType(x, y, 0);
-            if ([0, 1, 2, 3, 7].some(function(id) {
+            if ([0, 1, 2, 3, 11].some(function(id) {
                 return id === tileId;
             })) {
                 return true;
