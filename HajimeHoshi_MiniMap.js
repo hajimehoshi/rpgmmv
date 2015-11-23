@@ -64,7 +64,7 @@
     var Scene_Map_onMapLoaded = Scene_Map.prototype.onMapLoaded;
     Scene_Map.prototype.onMapLoaded = function() {
         Scene_Map_onMapLoaded.call(this);
-        if (!$dataMap.meta.mini_map) {
+        if (!$dataMap.meta || !$dataMap.meta.mini_map) {
             return;
         }
         if ($gameMap.mapId() in miniMapBitmaps) {
