@@ -64,6 +64,7 @@
     var Scene_Map_onMapLoaded = Scene_Map.prototype.onMapLoaded;
     Scene_Map.prototype.onMapLoaded = function() {
         Scene_Map_onMapLoaded.call(this);
+        // |$dataMap.meta| can be null on event testing.
         if (!$dataMap.meta || !$dataMap.meta.mini_map) {
             return;
         }
