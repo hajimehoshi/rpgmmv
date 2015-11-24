@@ -13,19 +13,32 @@
 // limitations under the License.
 
 /*:
- * @plugindesc Mini Map like FF6
+ * @plugindesc Mini Map like FF6 (ver 0.2.0)
  * @author Hajime Hoshi
  *
- * @help This plugin enables to show a small map.
+ * @param Picture ID
+ * @desc Picture ID reserved for a mini map.
+ * @default 90
+ *
+ * @help This plugin enables to show a mini map.
+ * Note that this plugin preserves one picture ID for a mini map,
+ * and the picture ID can't be used for a regular picture.
  *
  * MapInfo Note:
  *   <mini_map> # Show a mini map for this map.
+ *
+ * For other information, see:
+ * http://forums.rpgmakerweb.com/index.php?/topic/51143-mini-map/
  */
 
 (function() {
     'use strict';
 
+    var parameters = PluginManager.parameters('HajimeHoshi_MiniMap');
+    var miniMapPictureId = Number(parameters['Picture ID'] || 90);
+
     var miniMapBitmaps = {};
+    var EMPTY_BITMAP = new Bitmap(16, 16);
 
     var MINI_MAP_MARGIN = 16;
     var MINI_MAP_SIZE = 184;
@@ -47,6 +60,89 @@
         imageData.data.set(pixels);
         this._context.putImageData(imageData, 0, 0);
         this._setDirty();
+    };
+
+    function Sprite_MiniMapPicture(pictureId) {
+        this.initialize.apply(this, arguments);
+    }
+
+    Sprite_MiniMapPicture.prototype = Object.create(Sprite_Picture.prototype);
+    Sprite_MiniMapPicture.prototype.constructor = Sprite_MiniMapPicture;
+
+    var Sprite_Picture_initialize = Sprite_Picture.prototype.initialize;
+    Sprite_Picture.prototype.initialize = function(pictureId) {
+        Sprite_Picture_initialize.call(this, pictureId);
+
+        this._currentPositionSprite = new Sprite();
+        var positionBitmap = new Bitmap(POSITION_RADIUS * 2, POSITION_RADIUS * 2);
+        positionBitmap.drawCircle(POSITION_RADIUS, POSITION_RADIUS, POSITION_RADIUS, '#ff0000');
+        this._currentPositionSprite.bitmap = positionBitmap;
+        this.addChild(this._currentPositionSprite);
+    };
+
+    var Sprite_Picture_update = Sprite_Picture.prototype.update;
+    Sprite_Picture.prototype.update = function() {
+        Sprite_Picture_update.call(this);
+        if (this.visible) {
+            this.updateCurrentPositionSprite();
+        }
+    };
+
+    Sprite_Picture.prototype.updateCurrentPositionSprite = function() {
+        if (!this.bitmap) {
+            return;
+        }
+        if (this.bitmap === EMPTY_BITMAP) {
+            this._currentPositionSprite.visible = false;
+            return;
+        }
+        this._currentPositionSprite.visible = true;
+        var picture = this.picture();
+        if (!picture) {
+            return;
+        }
+        var size = Math.max(this.bitmap.width, this.bitmap.height);
+        var miniMapScale = MINI_MAP_SIZE / size;
+        this._currentPositionSprite.x = $gamePlayer.x - POSITION_RADIUS / miniMapScale - this.anchor.x * this.bitmap.width;
+        this._currentPositionSprite.y = $gamePlayer.y - POSITION_RADIUS / miniMapScale - this.anchor.y * this.bitmap.height;
+        this._currentPositionSprite.scale.x = 1 / miniMapScale / (picture.scaleX() / 100.0);
+        this._currentPositionSprite.scale.y = 1 / miniMapScale / (picture.scaleY() / 100.0);
+    };
+
+    var Sprite_Picture_updateScale = Sprite_Picture.prototype.updateScale;
+    Sprite_Picture.prototype.updateScale = function() {
+        Sprite_Picture_updateScale.call(this);
+        if (!this.bitmap) {
+            return;
+        }
+        var size = Math.max(this.bitmap.width, this.bitmap.height);
+        var miniMapScale = MINI_MAP_SIZE / size;
+        this.scale.x *= miniMapScale;
+        this.scale.y *= miniMapScale;
+    };
+
+    Sprite_MiniMapPicture.prototype.loadBitmap = function() {
+        // Do nothing.
+    };
+
+    var miniMapPictureSprite = null;
+
+    var Spriteset_Base_createPictures = Spriteset_Base.prototype.createPictures;
+    Spriteset_Base.prototype.createPictures = function() {
+        Spriteset_Base_createPictures.call(this);
+        miniMapPictureSprite = new Sprite_MiniMapPicture(miniMapPictureId);
+        // Subtract 1 from the picture id since the picture IDs starts with 1, not 0.
+        var index = miniMapPictureId - 1;
+        this._pictureContainer.removeChildAt(index);
+        this._pictureContainer.addChildAt(miniMapPictureSprite, index);
+    };
+
+    var DataManager_setupNewGame = DataManager.setupNewGame;
+    DataManager.setupNewGame = function() {
+        DataManager_setupNewGame.call(this);
+        var x = Graphics.width - MINI_MAP_SIZE - MINI_MAP_MARGIN;
+        var y = Graphics.height - MINI_MAP_SIZE - MINI_MAP_MARGIN;
+        $gameScreen.showPicture(miniMapPictureId, '', 0, x, y, 100, 100, 255, 0);
     };
 
     function isWater(gameMap, x, y) {
@@ -95,49 +191,19 @@
         miniMapBitmaps[$gameMap.mapId()] = bitmap;
     };
 
-    var Spriteset_Map_createUpperLayer = Spriteset_Map.prototype.createUpperLayer;
-    Spriteset_Map.prototype.createUpperLayer = function() {
-        Spriteset_Map_createUpperLayer.call(this);
-        this.createMiniMap();
-    };
-
-    Spriteset_Map.prototype.createMiniMap = function() {
-        this._miniMapSprite = new Sprite();
-        this._miniMapCurrentPositionSprite = new Sprite();
-        var positionBitmap = new Bitmap(POSITION_RADIUS * 2, POSITION_RADIUS * 2);
-        positionBitmap.drawCircle(POSITION_RADIUS, POSITION_RADIUS, POSITION_RADIUS, '#ff0000');
-        this._miniMapCurrentPositionSprite.bitmap = positionBitmap;
-        this.addChild(this._miniMapSprite);
-        this.addChild(this._miniMapCurrentPositionSprite);
-    };
-
     var Spriteset_Map_update = Spriteset_Map.prototype.update;
     Spriteset_Map.prototype.update = function() {
-        Spriteset_Map_update.call(this);
         this.updateMiniMap();
+        Spriteset_Map_update.call(this);
     };
 
     Spriteset_Map.prototype.updateMiniMap = function() {
         var miniMapBitmap = miniMapBitmaps[$gameMap.mapId()];
         if (!miniMapBitmap) {
-            this._miniMapSprite.visible = false;
-            this._miniMapCurrentPositionSprite.visible = false;
+            miniMapPictureSprite.bitmap = EMPTY_BITMAP;
             return;
         }
-        var size = Math.max(miniMapBitmap.width, miniMapBitmap.height);
-        var miniMapScale = MINI_MAP_SIZE / size;
-        var miniMapX = Graphics.width - miniMapBitmap.width * miniMapScale - MINI_MAP_MARGIN;
-        var miniMapY = Graphics.height - miniMapBitmap.height * miniMapScale - MINI_MAP_MARGIN;
-        this._miniMapSprite.bitmap = miniMapBitmap;
-        this._miniMapSprite.x = miniMapX;
-        this._miniMapSprite.y = miniMapY;
-        this._miniMapSprite.scale.x = miniMapScale;
-        this._miniMapSprite.scale.y = miniMapScale;
-        this._miniMapCurrentPositionSprite.x = miniMapX + ($gamePlayer.x * miniMapScale) - POSITION_RADIUS;
-        this._miniMapCurrentPositionSprite.y = miniMapY + ($gamePlayer.y * miniMapScale) - POSITION_RADIUS;
-
-        this._miniMapSprite.visible = true;
-        this._miniMapCurrentPositionSprite.visible = true;
+        miniMapPictureSprite.bitmap = miniMapBitmap;
     };
 
 })();
