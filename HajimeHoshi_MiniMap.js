@@ -69,9 +69,8 @@
     Sprite_MiniMapPicture.prototype = Object.create(Sprite_Picture.prototype);
     Sprite_MiniMapPicture.prototype.constructor = Sprite_MiniMapPicture;
 
-    var Sprite_Picture_initialize = Sprite_Picture.prototype.initialize;
-    Sprite_Picture.prototype.initialize = function(pictureId) {
-        Sprite_Picture_initialize.call(this, pictureId);
+    Sprite_MiniMapPicture.prototype.initialize = function(pictureId) {
+        Sprite_Picture.prototype.initialize.call(this, pictureId);
 
         this._currentPositionSprite = new Sprite();
         var positionBitmap = new Bitmap(POSITION_RADIUS * 2, POSITION_RADIUS * 2);
@@ -80,15 +79,14 @@
         this.addChild(this._currentPositionSprite);
     };
 
-    var Sprite_Picture_update = Sprite_Picture.prototype.update;
-    Sprite_Picture.prototype.update = function() {
-        Sprite_Picture_update.call(this);
+    Sprite_MiniMapPicture.prototype.update = function() {
+        Sprite_Picture.prototype.update.call(this);
         if (this.visible) {
             this.updateCurrentPositionSprite();
         }
     };
 
-    Sprite_Picture.prototype.updateCurrentPositionSprite = function() {
+    Sprite_MiniMapPicture.prototype.updateCurrentPositionSprite = function() {
         if (!this.bitmap) {
             return;
         }
@@ -109,9 +107,8 @@
         this._currentPositionSprite.scale.y = 1 / miniMapScale / (picture.scaleY() / 100.0);
     };
 
-    var Sprite_Picture_updateScale = Sprite_Picture.prototype.updateScale;
-    Sprite_Picture.prototype.updateScale = function() {
-        Sprite_Picture_updateScale.call(this);
+    Sprite_MiniMapPicture.prototype.updateScale = function() {
+        Sprite_Picture.prototype.updateScale.call(this);
         if (!this.bitmap) {
             return;
         }
