@@ -101,10 +101,14 @@
         }
         var size = Math.max(this.bitmap.width, this.bitmap.height);
         var miniMapScale = MINI_MAP_SIZE / size;
-        this._currentPositionSprite.x = $gamePlayer.x - POSITION_RADIUS / miniMapScale - this.anchor.x * this.bitmap.width;
-        this._currentPositionSprite.y = $gamePlayer.y - POSITION_RADIUS / miniMapScale - this.anchor.y * this.bitmap.height;
-        this._currentPositionSprite.scale.x = 1 / miniMapScale / (picture.scaleX() / 100.0);
-        this._currentPositionSprite.scale.y = 1 / miniMapScale / (picture.scaleY() / 100.0);
+        var scaleX = picture.scaleX() / 100.0;
+        var scaleY = picture.scaleY() / 100.0;
+        var positionScaleX = 1 / miniMapScale / scaleX;
+        var positionScaleY = 1 / miniMapScale / scaleY;
+        this._currentPositionSprite.x = $gamePlayer.x - POSITION_RADIUS * positionScaleX + 0.5 - this.anchor.x * this.bitmap.width;
+        this._currentPositionSprite.y = $gamePlayer.y - POSITION_RADIUS * positionScaleY + 0.5 - this.anchor.y * this.bitmap.height;
+        this._currentPositionSprite.scale.x = positionScaleX;
+        this._currentPositionSprite.scale.y = positionScaleY;
     };
 
     Sprite_MiniMapPicture.prototype.updateScale = function() {
