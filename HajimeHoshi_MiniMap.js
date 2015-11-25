@@ -173,7 +173,10 @@
         for (var j = 0; j < $dataMap.height; j++) {
             for (var i = 0; i < $dataMap.width; i++) {
                 var color = null;
-                if ($gameMap.checkPassage(i, j, 0x0f)) {
+                if ($gameMap.checkPassage(i, j, 0x01) ||
+                    $gameMap.checkPassage(i, j, 0x02) ||
+                    $gameMap.checkPassage(i, j, 0x04) ||
+                    $gameMap.checkPassage(i, j, 0x08)) {
                     color = COLORS['walk'];
                 } else if (!isWater($gameMap, i, j)) {
                     color = COLORS['mountain'];
