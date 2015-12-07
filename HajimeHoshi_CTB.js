@@ -84,10 +84,14 @@
         this.addWindow(this._turnsWindow);
     };
 
+    Window_BattleLog.prototype.windowWidth = function() {
+        return Graphics.boxWidth - Window_Command.prototype.windowWidth();
+    };
+
     var _Scene_Battle_createAllWindows = Scene_Battle.prototype.createAllWindows;
     Scene_Battle.prototype.createAllWindows = function() {
-        _Scene_Battle_createAllWindows.call(this);
         this.createTurnsWindow();
+        _Scene_Battle_createAllWindows.call(this);
     };
 
     var _Scene_Battle_createDisplayObjects = Scene_Battle.prototype.createDisplayObjects;
