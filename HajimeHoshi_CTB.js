@@ -205,46 +205,53 @@
         return Math.max(eval(formula), 0);
     }
 
-    function calcTurns(activeBattlers, num) {
+    function calcTurns(battlers, num) {
         var wps = {};
-        for (var i = 0; i < activeBattlers.length; i++) {
-            wps[i] = activeBattlers[i].wp;
+        for (var i = 0; i < battlers.length; i++) {
+            wps[i] = battlers[i].wp;
         }
 
-        var battlers = [];
+        var result = [];
         for (;;) {
-            for (var i = 0; i < activeBattlers.length; i++) {
+            for (var i = 0; i < battlers.length; i++) {
                 if (wps[i] >= MAX_WP) {
-                    battlers.push(activeBattlers[i]);
+                    result.push(battlers[i]);
                     wps[i] -= MAX_WP;
                 }
             }
-            if (battlers.length >= num) {
+            if (result.length >= num) {
                 break;
             }
-            for (var i = 0; i < activeBattlers.length; i++) {
-                var rate = evalWpRate(activeBattlers[i], activeBattlers);
+            for (var i = 0; i < battlers.length; i++) {
+                if (battlers[i].isDead()) {
+                    continue;
+                }
+                var rate = evalWpRate(battlers[i], battlers);
                 wps[i] += (AVERAGE_WP_DELTA * rate).clamp(0, MAX_WP)|0;;
             }
         }
-        battlers.length = num;
-        return battlers;
+        result.length = num;
+        return result;
     };
 
-    BattleManager.activeBattleMembers = function() {
+    BattleManager.activeBattlers = function() {
         return this.allBattleMembers().filter(function(battler) {
             return battler.canMove();
         });
     };
 
-    function proceedTilSomeoneHasTurn(activeBattlers) {
+    function proceedTilSomeoneHasTurn(battlers) {
         do {
-            activeBattlers.forEach(function(battler) {
-                var rate = evalWpRate(battler, activeBattlers);
+            // TODO: This logic is copied from calcTurns. Refactor this.
+            battlers.forEach(function(battler) {
+                if (battler.isDead()) {
+                    return;
+                }
+                var rate = evalWpRate(battler, battlers);
                 var delta = (AVERAGE_WP_DELTA * rate).clamp(0, MAX_WP)|0;
                 battler.setWp(battler.wp + delta);
             });
-        } while (activeBattlers.every(function(battler) {
+        } while (battlers.every(function(battler) {
             return battler.wp < MAX_WP;
         }));
     };
@@ -269,11 +276,12 @@
         }
 
         // TODO: It would be much better if the turns are updated on selecting a skill of an actor.
-        var battlers = calcTurns(this.activeBattleMembers(), this._turnsWindow.numVisibleRows());
+        var battlers = calcTurns(this.allBattleMembers(), this._turnsWindow.numVisibleRows());
+        // TODO: Show gray if a battler is inactive?
         this._turnsWindow.setBattlers(battlers);
         this._turnsWindow.refresh();
 
-        proceedTilSomeoneHasTurn(this.activeBattleMembers());
+        proceedTilSomeoneHasTurn(this.allBattleMembers());
 
         var battler = battlers[0];
         var wasAlive = battler.isAlive();
