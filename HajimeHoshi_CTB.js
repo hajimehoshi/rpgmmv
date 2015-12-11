@@ -179,23 +179,13 @@
         }
         this._preemptive = false;
         this._surprise = false;
-        this._phase = 'waiting';
         this._turnWp = 0;
     };
 
     BattleManager.makeActionOrders = function() {
-        throw 'not reach';
-    };
-
-    var _BattleManager_update = BattleManager.update;
-    BattleManager.update = function() {
-        _BattleManager_update.call(this);
-        if (!this.isBusy() && !this.updateEvent()) {
-            switch (this._phase) {
-            case 'waiting':
-                this.updateWaiting();
-                break;
-            }
+        this._actionBattlers = [];
+        if (this._subject) {
+            this._actionBattlers.push(this._subject);
         }
     };
 
@@ -233,12 +223,6 @@
         return result;
     };
 
-    BattleManager.activeBattlers = function() {
-        return this.allBattleMembers().filter(function(battler) {
-            return battler.canMove();
-        });
-    };
-
     function proceedTilSomeoneHasTurn(battlers) {
         do {
             // TODO: This logic is copied from calcTurns. Refactor this.
@@ -255,7 +239,7 @@
         }));
     };
 
-    BattleManager.updateWaiting = function() {
+    BattleManager.startInput = function() {
         this._turnsWindow.open();
 
         $gameParty.requestMotionRefresh();
@@ -295,48 +279,48 @@
         }
 
         // TODO: What if the battler becomes inactive?
+
         this._subject = battler;
         this._turnEndSubject = battler;
-        battler.makeActions();
         if (battler.isActor() && battler.canInput()) {
-            battler.setActionState('inputting');
-            this._actorIndex = battler.index();
             this._phase = 'input';
-            this.refreshStatus();
-            return;
+        } else {
+            this._phase = 'turn';
         }
-        this._phase = 'turn';
-        this.refreshStatus();
-    };
 
-    // TODO: override processTurn?
+        $gameParty.clearActions();
+        $gameParty.members().forEach(function(actor) {
+            actor.setActionState('undecided');
+        });
+        $gameTroop.clearActions();
+        $gameTroop.members().forEach(function(enemy) {
+            enemy.setActionState('waiting');
+        });
+        battler.makeActions();
 
-    BattleManager.updateTurnEnd = function() {
-        this._phase = 'waiting';
-    };
+        if (battler.isActor() && battler.canInput()) {
+            if (this.actor()) {
+                throw 'invalid state';
+            }
+            // Since this.actor() is null, the second argument is not used.
+            this.changeActor(battler.index(), '');
+        } else {
+            this.clearActor();
+        }
 
-    BattleManager.getNextSubject = function() {
-        return null;
+        if (!$gameParty.canInput()) {
+            this.startTurn();
+        }
     };
 
     BattleManager.selectNextCommand = function() {
-        do {
-            if (!this.actor().selectNextCommand()) {
-                if (!this.isEscaped()) {
-                    this._phase = 'turn';
-                }
-                $gameParty.requestMotionRefresh();
-                break;
-            }
-        } while (!this.actor().canInput());
+        if (!this.actor().selectNextCommand()) {
+            this.startTurn();
+        }
     };
 
     BattleManager.selectPreviousCommand = function() {
-        do {
-            if (!this.actor().selectPreviousCommand()) {
-                return;
-            }
-        } while (!this.actor().canInput());
+        this.actor().selectPreviousCommand();
     };
 
     BattleManager.endTurn = function() {
@@ -345,16 +329,17 @@
             this._turnEndSubject.setWp(this._turnEndSubject.wp - MAX_WP);
             this._turnEndSubject.onTurnEnd();
             this.refreshStatus();
-            this._turnEndSubject.setActionState('undecided');
         }
     };
 
-    BattleManager.startInput = function() {
-        throw 'not reach';
-    };
-
     BattleManager.startTurn = function() {
-        // Do nothing. This can be reached when 'escape' command is selected.
+        this._phase = 'turn';
+        // Do not call clearActor here. clearActor clears the action state
+        // of the current actor, which is not good.
+        this._actorIndex = -1;
+        this.makeActionOrders();
+        $gameParty.requestMotionRefresh();
+        this._logWindow.startTurn();
     };
 
     var _BattleManager_endBattle = BattleManager.endBattle;
@@ -364,6 +349,7 @@
     };
 
     Sprite_Actor.prototype.updateTargetPosition = function() {
+        // Change the order to make retreating higher priority.
         if (this._actor.canMove() && BattleManager.isEscaped()) {
             this.retreat();
         } else if (this._actor.isInputting() || this._actor.isActing()) {
