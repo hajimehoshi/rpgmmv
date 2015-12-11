@@ -144,17 +144,16 @@
     // System
     //
 
-    // TODO: This affects onTurnEndOnMap. Check that works correctly.
     Game_Battler.prototype.onTurnEnd = function() {
         this.clearResult();
+        this.updateStateTurns();
+        this.updateBuffTurns();
+        this.removeStatesAuto(2);
     };
 
     Game_Battler.prototype.onTurnStart = function() {
         this.clearResult();
         this.regenerateAll();
-        this.updateStateTurns();
-        this.updateBuffTurns();
-        this.removeStatesAuto(2);
     };
 
     var _BattleManager_initMembers = BattleManager.initMembers;
@@ -345,6 +344,7 @@
         if (this._turnEndSubject) {
             this._turnEndSubject.setWp(this._turnEndSubject.wp - MAX_WP);
             this._turnEndSubject.onTurnEnd();
+            this.refreshStatus();
             this._turnEndSubject.setActionState('undecided');
         }
     };
