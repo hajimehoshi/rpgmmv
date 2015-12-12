@@ -15,22 +15,40 @@
 /*:
  * @plugindesc Switching one or all targets
  * @author Hajime Hoshi
+ * @desc This plugin enables to switch one or all targets.
  *
- * @help This plugin enables to switch one or all targets.
+ * Skill/Item Note:
+ *   <selectable_all> # Enable to switch targets to all.
  */
+
+// TODO: An enemy should be able to switch targets when it uses a skill.
 
 (function() {
     'use strict';
 
+    Game_Action.prototype.item = Game_Action.prototype.item || function() {
+        return this._item;
+    };
+
     // TODO: This value is already used at forceAction. Is this OK?
     var TARGET_ALL = -2;
 
+    // TODO: Create ACTOR_ALL
     var ENEMY_ALL = new Object();
 
-    // single/all
     var _Window_BattleEnemy_maxItems = Window_BattleEnemy.prototype.maxItems;
     Window_BattleEnemy.prototype.maxItems = function() {
-        // TODO: Add a meta value not to select all enemies.
+        if (!BattleManager.inputtingAction()) {
+            // Initial state of the battle.
+            return _Window_BattleEnemy_maxItems.call(this);
+        }
+        var item = BattleManager.inputtingAction().item();
+        if (!item) {
+            return _Window_BattleEnemy_maxItems.call(this);
+        }
+        if (!item.meta.selectable_all) {
+            return _Window_BattleEnemy_maxItems.call(this);
+        }
         var maxItems = _Window_BattleEnemy_maxItems.call(this);
         if (maxItems === 1) {
             return 1;
