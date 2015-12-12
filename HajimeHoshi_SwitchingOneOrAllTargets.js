@@ -17,6 +17,12 @@
  * @author Hajime Hoshi
  * @desc This plugin enables to switch one or all targets.
  *
+ * @param List Item For All
+ * @desc The list item for selecting all targets.
+ * @default (All)
+ *
+ * @help
+ *
  * Skill/Item Note:
  *   <selectable_all> # Enable to switch targets to all.
  */
@@ -25,6 +31,9 @@
 
 (function() {
     'use strict';
+
+    var parameters = PluginManager.parameters('HajimeHoshi_SwitchingOneOrAllTargets');
+    var listItemForAll = String(parameters['List Item For All'] || '(All)');
 
     Game_Action.prototype.item = Game_Action.prototype.item || function() {
         return this._item;
@@ -80,7 +89,7 @@
     Window_BattleEnemy.prototype.drawItem = function(index) {
         if (index === this._enemies.length) {
             this.resetTextColor();
-            var name = '(All)';
+            var name = listItemForAll;
             var rect = this.itemRectForText(index);
             this.drawText(name, rect.x, rect.y, rect.width);
             return;
