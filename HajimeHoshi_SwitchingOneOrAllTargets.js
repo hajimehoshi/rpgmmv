@@ -116,9 +116,6 @@
         this._targetsEnlarged = true;
     };
 
-    // TODO: This value is already used at forceAction. Is this OK?
-    var TARGET_ALL = -2;
-
     var _Window_BattleActor_maxItems = Window_BattleActor.prototype.maxItems;
     Window_BattleActor.prototype.maxItems = function() {
         if (!BattleManager.inputtingAction()) {
@@ -155,15 +152,6 @@
         _Window_BattleActor_drawItem.call(this, index);
     };
 
-    var _Scene_Battle_onActorOk = Scene_Battle.prototype.onActorOk;
-    Scene_Battle.prototype.onActorOk = function() {
-        if (this._actorWindow.actor() === Game_ActorAll.instance()) {
-            var action = BattleManager.inputtingAction();
-            action.enlargeTargets();
-        }
-        _Scene_Battle_onActorOk.call(this);
-    };
-
     var _Window_BattleEnemy_maxItems = Window_BattleEnemy.prototype.maxItems;
     Window_BattleEnemy.prototype.maxItems = function() {
         if (!BattleManager.inputtingAction()) {
@@ -191,23 +179,6 @@
         return null;
     };
 
-    var _Window_BattleEnemy_enemyIndex = Window_BattleEnemy.prototype.enemyIndex;
-    Window_BattleEnemy.prototype.enemyIndex = function() {
-        if (this.index() === this._enemies.length) {
-            return TARGET_ALL;
-        }
-        return _Window_BattleEnemy_enemyIndex.call(this);
-    };
-
-    var _Game_Action_setTarget = Game_Action.prototype.setTarget;
-    Game_Action.prototype.setTarget = function(targetIndex) {
-        _Game_Action_setTarget.call(this, targetIndex);
-        // TODO: This is hacky.
-        if (targetIndex === TARGET_ALL) {
-            this.enlargeTargets();
-        }
-    };
-
     var _Window_BattleEnemy_drawItem = Window_BattleEnemy.prototype.drawItem;
     Window_BattleEnemy.prototype.drawItem = function(index) {
         if (index === this._enemies.length) {
@@ -219,6 +190,25 @@
         }
         _Window_BattleEnemy_drawItem.call(this, index);
     };
+
+    var _Scene_Battle_onActorOk = Scene_Battle.prototype.onActorOk;
+    Scene_Battle.prototype.onActorOk = function() {
+        if (this._actorWindow.actor() === Game_ActorAll.instance()) {
+            var action = BattleManager.inputtingAction();
+            action.enlargeTargets();
+        }
+        _Scene_Battle_onActorOk.call(this);
+    };
+
+    var _Scene_Battle_onEnemyOk = Scene_Battle.prototype.onEnemyOk;
+    Scene_Battle.prototype.onEnemyOk = function() {
+        if (this._enemyWindow.enemy() === Game_EnemyAll.instance()) {
+            var action = BattleManager.inputtingAction();
+            action.enlargeTargets();
+        }
+        _Scene_Battle_onEnemyOk.call(this);
+    };
+
 
     var _Game_Action_targetsForOpponents = Game_Action.prototype.targetsForOpponents;
     Game_Action.prototype.targetsForOpponents = function() {
