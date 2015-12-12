@@ -39,6 +39,24 @@
         return this._item;
     };
 
+    Game_Action.prototype.canSelectAll = function() {
+        if (!this.item()) {
+            return false;
+        }
+        return this.isForOne() && this.item().meta.selectable_all;
+    };
+
+    var _Game_Action_clear = Game_Action.prototype.clear;
+    Game_Action.prototype.clear = function() {
+        _Game_Action_clear.call(this);
+        // Create another flag since _targetIndex doesn't make sense for enemies.
+        this._targetsEnlarged = false;
+    };
+
+    Game_Action.prototype.enlargeTargets = function() {
+        this._targetsEnlarged = true;
+    };
+
     // TODO: This value is already used at forceAction. Is this OK?
     var TARGET_ALL = -2;
 
@@ -51,11 +69,7 @@
             // Initial state of the battle.
             return _Window_BattleEnemy_maxItems.call(this);
         }
-        var item = BattleManager.inputtingAction().item();
-        if (!item) {
-            return _Window_BattleEnemy_maxItems.call(this);
-        }
-        if (!item.meta.selectable_all) {
+        if (!BattleManager.inputtingAction().canSelectAll()) {
             return _Window_BattleEnemy_maxItems.call(this);
         }
         var maxItems = _Window_BattleEnemy_maxItems.call(this);
@@ -85,6 +99,14 @@
         return _Window_BattleEnemy_enemyIndex.call(this);
     };
 
+    var _Game_Action_setTarget = Game_Action.prototype.setTarget;
+    Game_Action.prototype.setTarget = function(targetIndex) {
+        _Game_Action_setTarget.call(this, targetIndex);
+        if (targetIndex === TARGET_ALL) {
+            this.enlargeTargets();
+        }
+    };
+
     var _Window_BattleEnemy_drawItem = Window_BattleEnemy.prototype.drawItem;
     Window_BattleEnemy.prototype.drawItem = function(index) {
         if (index === this._enemies.length) {
@@ -99,18 +121,46 @@
 
     var _Game_Action_targetsForOpponents = Game_Action.prototype.targetsForOpponents;
     Game_Action.prototype.targetsForOpponents = function() {
-        if (this._targetIndex === TARGET_ALL) {
+        if (this._targetsEnlarged) {
             return this.opponentsUnit().aliveMembers();
         }
-        return _Game_Action_targetsForOpponents.call(this);
+        var targets = _Game_Action_targetsForOpponents.call(this);
+        if (!this.subject().isEnemy() || !this.canSelectAll()) {
+            return targets;
+        }
+        var unit = this.opponentsUnit();
+        if (unit.aliveMembers().length === 1) {
+            return targets;
+        }
+        var num = Math.randomInt(unit.aliveMembers().length + 1);
+        if (0 < num) {
+            return targets;
+        }
+        targets = unit.aliveMembers();
+        this.enlargeTargets();
+        return targets;
     };
 
     var _Game_Action_targetsForFriends = Game_Action.prototype.targetsForFriends;
     Game_Action.prototype.targetsForFriends = function() {
-        if (this._targetIndex === TARGET_ALL) {
+        if (this._targetsEnlarged) {
             return this.friendsUnit().aliveMembers();
         }
-        return _Game_Action_targetsForFriends.call(this);
+        var targets = _Game_Action_targetsForFriends.call(this);
+        if (!this.subject().isEnemy() || !this.canSelectAll()) {
+            return targets;
+        }
+        var unit = this.friendsUnit();
+        if (unit.aliveMembers().length === 1) {
+            return targets;
+        }
+        var num = Math.randomInt(unit.aliveMembers().length + 1);
+        if (0 < num) {
+            return targets;
+        }
+        targets = unit.aliveMembers();
+        this.enlargeTargets();
+        return targets;
     };
 
     var _Game_Unit_select = Game_Unit.prototype.select;
@@ -128,7 +178,7 @@
     var _Game_Action_makeDamageValue = Game_Action.prototype.makeDamageValue;
     Game_Action.prototype.makeDamageValue = function(target, critical) {
         var damage = _Game_Action_makeDamageValue.call(this, target, critical);
-        if (this.isForOne() && this._targetIndex === TARGET_ALL) {
+        if (this._targetsEnlarged) {
             damage = Math.round(damage / 2);
         }
         return damage;
