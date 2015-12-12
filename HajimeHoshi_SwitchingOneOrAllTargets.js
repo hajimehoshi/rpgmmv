@@ -123,4 +123,14 @@
         }
         _Game_Unit_select.call(this, activeMember);
     };
+
+    // Half the damage when the targets are switched to all.
+    var _Game_Action_makeDamageValue = Game_Action.prototype.makeDamageValue;
+    Game_Action.prototype.makeDamageValue = function(target, critical) {
+        var damage = _Game_Action_makeDamageValue.call(this, target, critical);
+        if (this.isForOne() && this._targetIndex === TARGET_ALL) {
+            damage = Math.round(damage / 2);
+        }
+        return damage;
+    };
 })();
