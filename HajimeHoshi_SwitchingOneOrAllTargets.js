@@ -35,6 +35,65 @@
     var parameters = PluginManager.parameters('HajimeHoshi_SwitchingOneOrAllTargets');
     var listItemForAll = String(parameters['List Item For All'] || '(All)');
 
+    function Game_ActorAll() {
+        this.initialize.apply(this, arguments);
+    }
+
+    Game_ActorAll.prototype = Object.create(Game_Actor.prototype);
+    Game_ActorAll.prototype.constructor = Game_ActorAll;
+
+    Game_ActorAll.prototype.initialize = function() {
+        Game_Actor.prototype.initialize.call(this, 0);
+    };
+
+    Game_ActorAll.prototype.setup = function(actorId) {
+    };
+
+    Game_ActorAll.prototype.name = function() {
+        return listItemForAll;
+    };
+
+    Game_ActorAll.prototype.isDead = function(actorId) {
+        return false;
+    };
+
+    Game_ActorAll.prototype.isDying = function(actorId) {
+        return false;
+    };
+
+    Game_ActorAll.instance = function() {
+        if (this._instance) {
+            return this._instance;
+        }
+        return this._instance = new Game_ActorAll();
+    };
+
+    function Game_EnemyAll() {
+        this.initialize.apply(this, arguments);
+    }
+
+    Game_EnemyAll.prototype = Object.create(Game_Enemy.prototype);
+    Game_EnemyAll.prototype.constructor = Game_EnemyAll;
+
+    Game_EnemyAll.prototype.setup = function(enemyId) {
+    };
+
+    Game_EnemyAll.prototype.name = function() {
+        return listItemForAll;
+    };
+
+    Game_EnemyAll.prototype.initialize = function() {
+        Game_Enemy.prototype.initialize.call(this, 0, 0, 0);
+    };
+
+    Game_EnemyAll.instance = function() {
+        if (this._instance) {
+            return this._instance;
+        }
+        return this._instance = new Game_EnemyAll();
+    };
+
+
     Game_Action.prototype.item = Game_Action.prototype.item || function() {
         return this._item;
     };
@@ -60,13 +119,54 @@
     // TODO: This value is already used at forceAction. Is this OK?
     var TARGET_ALL = -2;
 
-    // TODO: Create ACTOR_ALL
-    var ENEMY_ALL = new Object();
+    var _Window_BattleActor_maxItems = Window_BattleActor.prototype.maxItems;
+    Window_BattleActor.prototype.maxItems = function() {
+        if (!BattleManager.inputtingAction()) {
+            return _Window_BattleActor_maxItems.call(this);
+        }
+        if (!BattleManager.inputtingAction().canSelectAll()) {
+            return _Window_BattleActor_maxItems.call(this);
+        }
+        var maxItems = _Window_BattleActor_maxItems.call(this);
+        if (maxItems === 1) {
+            return 1;
+        }
+        return maxItems + 1;
+    };
+
+    var _Window_BattleActor_actor = Window_BattleActor.prototype.actor;
+    Window_BattleActor.prototype.actor = function() {
+        var actor = _Window_BattleActor_actor.call(this);
+        if (actor) {
+            return actor;
+        }
+        if (this.index() === $gameParty.battleMembers().length) {
+            return Game_ActorAll.instance();
+        }
+        return null;
+    };
+
+    var _Window_BattleActor_drawItem = Window_BattleActor.prototype.drawItem;
+    Window_BattleActor.prototype.drawItem = function(index) {
+        if (index === $gameParty.battleMembers().length) {
+            this.drawBasicArea(this.basicAreaRect(index), Game_ActorAll.instance());
+            return;
+        }
+        _Window_BattleActor_drawItem.call(this, index);
+    };
+
+    var _Scene_Battle_onActorOk = Scene_Battle.prototype.onActorOk;
+    Scene_Battle.prototype.onActorOk = function() {
+        if (this._actorWindow.actor() === Game_ActorAll.instance()) {
+            var action = BattleManager.inputtingAction();
+            action.enlargeTargets();
+        }
+        _Scene_Battle_onActorOk.call(this);
+    };
 
     var _Window_BattleEnemy_maxItems = Window_BattleEnemy.prototype.maxItems;
     Window_BattleEnemy.prototype.maxItems = function() {
         if (!BattleManager.inputtingAction()) {
-            // Initial state of the battle.
             return _Window_BattleEnemy_maxItems.call(this);
         }
         if (!BattleManager.inputtingAction().canSelectAll()) {
@@ -86,7 +186,7 @@
             return enemy;
         }
         if (this.index() === this._enemies.length) {
-            return ENEMY_ALL;
+            return Game_EnemyAll.instance();
         }
         return null;
     };
@@ -102,6 +202,7 @@
     var _Game_Action_setTarget = Game_Action.prototype.setTarget;
     Game_Action.prototype.setTarget = function(targetIndex) {
         _Game_Action_setTarget.call(this, targetIndex);
+        // TODO: This is hacky.
         if (targetIndex === TARGET_ALL) {
             this.enlargeTargets();
         }
@@ -111,7 +212,7 @@
     Window_BattleEnemy.prototype.drawItem = function(index) {
         if (index === this._enemies.length) {
             this.resetTextColor();
-            var name = listItemForAll;
+            var name = Game_EnemyAll.instance().name();
             var rect = this.itemRectForText(index);
             this.drawText(name, rect.x, rect.y, rect.width);
             return;
@@ -165,7 +266,8 @@
 
     var _Game_Unit_select = Game_Unit.prototype.select;
     Game_Unit.prototype.select = function(activeMember) {
-        if (activeMember === ENEMY_ALL) {
+        if (activeMember === Game_ActorAll.instance() ||
+            activeMember === Game_EnemyAll.instance()) {
             this.members().forEach(function(member) {
                 member.select();
             });
