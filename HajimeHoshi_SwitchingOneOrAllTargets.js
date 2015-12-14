@@ -27,8 +27,6 @@
  *   <selectable_all> # Enable to switch targets to all.
  */
 
-// TODO: An enemy should be able to switch targets when it uses a skill.
-
 (function() {
     'use strict';
 
