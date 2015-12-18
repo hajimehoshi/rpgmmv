@@ -59,9 +59,12 @@
         }, this);
     };
 
+    // TODO: Override updateTurn
+
     var _BattleManager_update = BattleManager.update;
     BattleManager.update = function() {
         if (this.isInTurn()) {
+            $gameParty.requestMotionRefresh();
             // TODO: How about troop?
             var targets = $gameParty.deadMembers().filter(function(actor) {
                 return actor.states().some(function(state) {
@@ -73,6 +76,8 @@
                 var action = new Game_Action(subject, true);
                 action.setSkill(skillId);
                 action.prepare();
+                // FIXME: Overriding _subject doesn't work when a battler
+                // acts two or more times.
                 this._subject = subject;
                 this._phase = 'action';
                 this._action = action;
@@ -80,15 +85,15 @@
                 this._action.applyGlobal();
                 this.refreshStatus();
                 this._logWindow.startAction(subject, action, targets);
-            }
-            targets.forEach(function(battler) {
-                battler.states().forEach(function(state) {
-                    if (!state.meta.auto_life) {
-                        return;
-                    }
-                    battler.removeState(state.id);
+                targets.forEach(function(battler) {
+                    battler.states().forEach(function(state) {
+                        if (!state.meta.auto_life) {
+                            return;
+                        }
+                        battler.removeState(state.id);
+                    });
                 });
-            });
+            }
         }                
         _BattleManager_update.call(this);
     }
