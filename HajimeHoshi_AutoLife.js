@@ -30,7 +30,7 @@
     'use strict';
 
     var parameters = PluginManager.parameters('HajimeHoshi_AutoLife');
-    var skillId = Number(parameters['Skill ID'] || 1);
+    var skillId = Math.floor(Number(parameters['Skill ID'])) || 1;
 
     var anonymousActorId = 0;
 
