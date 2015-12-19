@@ -23,7 +23,7 @@
  *                               # The first argument must be mhp, mmp, atk, def,
  *                               # mat, mdf, agi or luk.
  *                               # The second argument must be an integer value
- *                               # including an negative value.
+ *                               # including a negative value.
  */
 
 (function() {
