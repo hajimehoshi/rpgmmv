@@ -34,6 +34,53 @@
 
     var anonymousActorId = 0;
 
+    function AnonymousActor() {
+        this.initialize.apply(this, arguments);
+    }
+
+    AnonymousActor.prototype = Object.create(Game_Actor.prototype);
+    AnonymousActor.prototype.constructor = AnonymousActor;
+
+    AnonymousActor.prototype.makeActions = function() {
+        this.clearActions();
+        this._actions = [];
+        var members = $gameParty.members();
+        for (var i = 0; i < members.length; i++) {
+            if (!members[i].hasAutoLifeState()) {
+                continue;
+            }
+            var action = new AutoLifeAction(this, true)
+            action.setSkill(skillId);
+            action.prepare();
+            action.setTarget(i);
+            this._actions.push(action);
+        }
+    };
+
+    function AutoLifeAction() {
+        this.initialize.apply(this, arguments);
+    }
+
+    AutoLifeAction.prototype = Object.create(Game_Action.prototype);
+    AutoLifeAction.prototype.constructor = AutoLifeAction;
+
+    var _AutoLifeAction_apply = AutoLifeAction.prototype.apply;
+    AutoLifeAction.prototype.apply = function(target) {
+        _AutoLifeAction_apply.call(this, target);
+        target.states().forEach(function(state) {
+            if (!state.meta.auto_life) {
+                return;
+            }
+            target.removeState(state.id);
+        });
+    };
+
+    Game_Battler.prototype.hasAutoLifeState = function() {
+        return this.states().some(function(state) {
+            return state.meta.auto_life;
+        });
+    };
+
     // Create an anonymous actor. This is used as a subject to use the skill
     // to revive dead battlers.
     var _Scene_Boot_start = Scene_Boot.prototype.start;
@@ -59,42 +106,43 @@
         }, this);
     };
 
-    // TODO: Override updateTurn
+    var _BattleManager_checkBattleEnd = BattleManager.checkBattleEnd;
+    BattleManager.checkBattleEnd = function() {
+        if ($gameParty.isAllDead()) {
+            if ($gameParty.members().some(function(actor) {
+                return actor.hasAutoLifeState();
+            })) {
+                return false;
+            }
+        }
+        return _BattleManager_checkBattleEnd.call(this);
+    };
+
+    var _BattleManager_updateTurn = BattleManager.updateTurn;
+    BattleManager.updateTurn = function() {
+        if (this._tmpSubject) {
+            this._subject = this._tmpSubject;
+            this._tmpSubject = null;
+        }
+        // TODO: How about troop?
+        var targets = $gameParty.deadMembers().filter(function(actor) {
+            return actor.states().some(function(state) {
+                return state.meta.auto_life;
+            });
+        });
+        if (targets.length) {
+            var subject = new AnonymousActor(anonymousActorId);
+            subject.makeActions();
+            this._tmpSubject = this._subject;
+            this._subject = subject;
+            this.processTurn();
+            return;
+        }
+        _BattleManager_updateTurn.call(this);
+    };
 
     var _BattleManager_update = BattleManager.update;
     BattleManager.update = function() {
-        if (this.isInTurn()) {
-            $gameParty.requestMotionRefresh();
-            // TODO: How about troop?
-            var targets = $gameParty.deadMembers().filter(function(actor) {
-                return actor.states().some(function(state) {
-                    return state.meta.auto_life;
-                });
-            });
-            if (targets.length) {
-                var subject = new Game_Actor(anonymousActorId);
-                var action = new Game_Action(subject, true);
-                action.setSkill(skillId);
-                action.prepare();
-                // FIXME: Overriding _subject doesn't work when a battler
-                // acts two or more times.
-                this._subject = subject;
-                this._phase = 'action';
-                this._action = action;
-                this._targets = targets;
-                this._action.applyGlobal();
-                this.refreshStatus();
-                this._logWindow.startAction(subject, action, targets);
-                targets.forEach(function(battler) {
-                    battler.states().forEach(function(state) {
-                        if (!state.meta.auto_life) {
-                            return;
-                        }
-                        battler.removeState(state.id);
-                    });
-                });
-            }
-        }                
         _BattleManager_update.call(this);
     }
 
