@@ -114,7 +114,7 @@
 
     var _BattleManager_checkBattleEnd = BattleManager.checkBattleEnd;
     BattleManager.checkBattleEnd = function() {
-        if ($gameParty.isAllDead()) {
+        if (this._phase && !this.checkAbort() && $gameParty.isAllDead()) {
             if ($gameParty.members().some(function(actor) {
                 return actor.hasAutoLifeState();
             })) {
