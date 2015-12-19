@@ -19,7 +19,7 @@
  * @help
  *
  * State Note:
- *   <incompatible_with:10,11> # Sets state #10 and #11 as an incompatible state,
+ *   <incompatible_with:10,11> # Sets state #10 and #11 as incompatible states,
  *                             # which mean if the state is added to a battler,
  *                             # state #10 and #11 are automatically removed
  *                             # from the battler.
