@@ -335,7 +335,8 @@
     BattleManager.startTurn = function() {
         this._phase = 'turn';
         // Do not call clearActor here. clearActor clears the action state
-        // of the current actor, which is not good.
+        // of the current actor, which is not good. Clearing the action state
+        // forces the actor to go back to the original position.
         this._actorIndex = -1;
         this.makeActionOrders();
         $gameParty.requestMotionRefresh();

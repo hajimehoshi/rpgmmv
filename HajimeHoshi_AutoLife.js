@@ -106,6 +106,12 @@
         }, this);
     };
 
+    var _BattleManager_initMembers = BattleManager.initMembers;
+    BattleManager.initMembers = function() {
+        _BattleManager_initMembers.call(this);
+        this._stashedSubject = null;
+    };
+
     var _BattleManager_checkBattleEnd = BattleManager.checkBattleEnd;
     BattleManager.checkBattleEnd = function() {
         if ($gameParty.isAllDead()) {
@@ -120,9 +126,9 @@
 
     var _BattleManager_updateTurn = BattleManager.updateTurn;
     BattleManager.updateTurn = function() {
-        if (this._tmpSubject) {
-            this._subject = this._tmpSubject;
-            this._tmpSubject = null;
+        if (this._stashedSubject) {
+            this._subject = this._stashedSubject;
+            this._stashedSubject = null;
         }
         // TODO: How about troop?
         var targets = $gameParty.deadMembers().filter(function(actor) {
@@ -133,7 +139,7 @@
         if (targets.length) {
             var subject = new AnonymousActor(anonymousActorId);
             subject.makeActions();
-            this._tmpSubject = this._subject;
+            this._stashedSubject = this._subject;
             this._subject = subject;
             this.processTurn();
             return;
