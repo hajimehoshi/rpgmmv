@@ -7,9 +7,10 @@
  * @help
  *
  * This plugin fixes these bugs:
- * * 'Force Action' event command with 'Random Target' only targets
+ * * 'Force Action' event command with 'Random Target' only targeted
  *   a first enemy or actor.
- * * An actor with 'Auto Battle' only targets a first enemy.
+ * * An actor with 'Auto Battle' only targeted a first enemy.
+ * * An enemy action for a dead enemy only targeted a first enemy.
  */
 
 (function() {
@@ -47,6 +48,33 @@
             value += Math.random();
         }
         return value;
+    };
+
+    Game_Action.prototype.targetsForFriends = function() {
+        var targets = [];
+        var unit = this.friendsUnit();
+        if (this.isForUser()) {
+            return [this.subject()];
+        } else if (this.isForDeadFriend()) {
+            if (this.isForOne()) {
+                if (this._targetIndex < 0) {
+                    targets.push(unit.randomDeadTarget());
+                } else {
+                    targets.push(unit.smoothDeadTarget(this._targetIndex));
+                }
+            } else {
+                targets = unit.deadMembers();
+            }
+        } else if (this.isForOne()) {
+            if (this._targetIndex < 0) {
+                targets.push(unit.randomTarget());
+            } else {
+                targets.push(unit.smoothTarget(this._targetIndex));
+            }
+        } else {
+            targets = unit.aliveMembers();
+        }
+        return targets;
     };
 
 })();
