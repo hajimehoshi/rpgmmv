@@ -47,9 +47,11 @@
         if (indices.length === 1) {
             return [this.smoothTarget(indices[0])];
         }
-        return indices.filter(function(index) {
-            return this.members()[index].isAlive();
-        });
+        return indices.map(function(index) {
+            return this.members()[index];
+        }, this).filter(function(member) {
+            return member.isAlive();
+        }, this);
     };
 
     Game_Unit.prototype.smoothDeadTargets = function(indices) {
@@ -59,9 +61,11 @@
         if (indices.length === 1) {
             return [this.smoothDeadTarget(indices[0])];
         }
-        return indices.filter(function(index) {
-            return this.members()[index].isDead();
-        });
+        return indices.map(function(index) {
+            return this.members()[index];
+        }, this).filter(function(member) {
+            return member.isDead();
+        }, this);
     };
 
     Game_Action.prototype.canEnlargeSelection = function() {
@@ -673,22 +677,23 @@
     Window_MenuActor.prototype.processCursorMove = function() {
         // TODO: What if the party members are more than 4?
         _Window_MenuActor_processCursorMove.call(this);
-        // When cursorAll() is true, isCursorMovable() is false.
-        if (!this.canEnlargeSelection()) {
-            return;
-        }
-        if (!this.cursorAll()) {
-            if (Input.isRepeated('right')) {
-                SoundManager.playCursor();
-                this.setCursorAll(true);
-                this.updateCursor();
+        if (this.isOpenAndActive() && !this._cursorFixed && this.maxItems() > 0) {
+            if (!this.canEnlargeSelection()) {
+                return;
             }
-        } else {
-            if (Input.isRepeated('left')) {
-                SoundManager.playCursor();
-                this.setCursorAll(false);
-                this.selectLast();
-                this.updateCursor();
+            if (!this.cursorAll()) {
+                if (Input.isRepeated('right')) {
+                    SoundManager.playCursor();
+                    this.setCursorAll(true);
+                    this.updateCursor();
+                }
+            } else {
+                if (Input.isRepeated('left')) {
+                    SoundManager.playCursor();
+                    this.setCursorAll(false);
+                    this.selectLast();
+                    this.updateCursor();
+                }
             }
         }
     };
