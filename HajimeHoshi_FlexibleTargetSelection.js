@@ -710,7 +710,7 @@
         return _Scene_ItemBase_itemTargetActors.call(this);
     };
 
-    // Drawin should always fails for the user.
+    // Drain should always fail for the user.
     var _Game_Action_testApply = Game_Action.prototype.testApply;
     Game_Action.prototype.testApply = function(target) {
         var result = _Game_Action_testApply.call(this, target);
