@@ -294,6 +294,10 @@
 
     Spriteset_Battle.prototype.nearestBattlerSprite = function(sprite, direction) {
         var enemySprites = this.battlerSprites().filter(function(sprite) {
+            // battler() can be undefined for actors.
+            if (!sprite.battler()) {
+                return false;
+            }
             return sprite.battler().isEnemy() && sprite.battler().isAlive();
         });
         var enemySpritesSortedByY = enemySprites.sort(function(a, b) {
