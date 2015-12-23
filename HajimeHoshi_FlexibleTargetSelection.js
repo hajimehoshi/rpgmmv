@@ -171,6 +171,9 @@
                 }
                 return targets;
             }
+            if (this._actorTargetIndices.length || this._enemyTargetIndices.length) {
+                return [];
+            }
             // indices are empty: Let's decide random targets.
             var unit = this.isForFriend() ? this.friendsUnit() : this.opponentsUnit();
             if (this.isForAll()) {
@@ -193,6 +196,9 @@
                 this._isSelectionEnlarged = true;
             }
             return targets;
+        }
+        if (this._actorTargetIndices.length || this._enemyTargetIndices.length) {
+            return [];
         }
         // indices are empty: Let's decide random targets.
         var unit = this.isForFriend() ? this.friendsUnit() : this.opponentsUnit();
