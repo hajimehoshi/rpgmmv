@@ -28,7 +28,6 @@
     // TODO: Consider ConfigManager.commandRemember
     // TODO: Touch UI
     // TODO: Fix magic reflection
-    // TODO: Page Up / Page Down
 
     var _Scene_Boot_start = Scene_Boot.prototype.start;
     Scene_Boot.prototype.start = function() {
@@ -284,6 +283,9 @@
 
     Spriteset_Battle.prototype.leftmostEnemySprite = function() {
         var enemySprites = this.battlerSprites().filter(function(sprite) {
+            if (!sprite.battler()) {
+                return false;
+            }
             return sprite.battler().isEnemy() && sprite.battler().isAlive();
         });
         var enemySpritesSortedByY = enemySprites.sort(function(a, b) {
@@ -384,6 +386,7 @@
         return sprites[0];
     };
 
+    // TODO: Redefine them like BattlerSelector.TARGET_TYPE_ONE.
     var BATTLER_SELECTOR_TARGET_TYPE_ONE = 0;
     var BATTLER_SELECTOR_TARGET_TYPE_ONE_OR_MULTIPLE = 1;
     var BATTLER_SELECTOR_TARGET_TYPE_MULTIPLE = 2;
@@ -442,61 +445,72 @@
         }
         
         var nextBattlers = [];
-        if (1 < this._selectedBattlers.length ||
+        if (this._targetType === BATTLER_SELECTOR_TARGET_TYPE_ONE_OR_MULTIPLE ||
             this._targetType === BATTLER_SELECTOR_TARGET_TYPE_MULTIPLE) {
-            switch (this._targetType) {
-            case BATTLER_SELECTOR_TARGET_TYPE_ONE:
-                throw 'invalid state';
-                break;
-            case BATTLER_SELECTOR_TARGET_TYPE_ONE_OR_MULTIPLE:
-                if (Input.isRepeated('right') && this._selectedBattlers[0].isEnemy()) {
-                    nextBattlers = [this._spriteset.leftmostEnemySprite().battler()];
-                }
-                if (Input.isRepeated('left') && this._selectedBattlers[0].isActor()) {
-                    nextBattlers = [$gameParty.members()[$gameParty.members().length - 1]];
-                }
-                break;
-            case BATTLER_SELECTOR_TARGET_TYPE_MULTIPLE:
-                if (Input.isRepeated('right') && this._selectedBattlers[0].isEnemy()) {
-                    nextBattlers = $gameParty.members().clone();
-                }
-                if (Input.isRepeated('left') && this._selectedBattlers[0].isActor()) {
-                    nextBattlers = $gameTroop.aliveMembers().clone();
-                }
-                break;
+            if (Input.isRepeated('pagedown')) {
+                nextBattlers = $gameParty.members().clone();
             }
-        } else {
-            var currentSprite = this._spriteset.battlerSprites().filter(function(sprite) {
-                return sprite.battler() === this._selectedBattlers[0];
-            }, this)[0];
-            if (Input.isRepeated('down')) {
-                var nextBattlerSprite = this._spriteset.nearestBattlerSprite(currentSprite, 'down');
-                if (nextBattlerSprite) {
-                    nextBattlers = [nextBattlerSprite.battler()];
-                }
+            if (Input.isRepeated('pageup')) {
+                nextBattlers = $gameTroop.aliveMembers().clone();
             }
-            if (Input.isRepeated('up')) {
-                var nextBattlerSprite = this._spriteset.nearestBattlerSprite(currentSprite, 'up');
-                if (nextBattlerSprite) {
-                    nextBattlers = [nextBattlerSprite.battler()];
+        }
+        if (!nextBattlers.length) {
+            if (1 < this._selectedBattlers.length ||
+                this._targetType === BATTLER_SELECTOR_TARGET_TYPE_MULTIPLE) {
+                switch (this._targetType) {
+                case BATTLER_SELECTOR_TARGET_TYPE_ONE:
+                    throw 'invalid state';
+                    break;
+                case BATTLER_SELECTOR_TARGET_TYPE_ONE_OR_MULTIPLE:
+                    if (Input.isRepeated('right') && this._selectedBattlers[0].isEnemy()) {
+                        nextBattlers = [this._spriteset.leftmostEnemySprite().battler()];
+                    }
+                    if (Input.isRepeated('left') && this._selectedBattlers[0].isActor()) {
+                        nextBattlers = [$gameParty.members()[$gameParty.members().length - 1]];
+                    }
+                    break;
+                case BATTLER_SELECTOR_TARGET_TYPE_MULTIPLE:
+                    if (Input.isRepeated('right') && this._selectedBattlers[0].isEnemy()) {
+                        nextBattlers = $gameParty.members().clone();
+                    }
+                    if (Input.isRepeated('left') && this._selectedBattlers[0].isActor()) {
+                        nextBattlers = $gameTroop.aliveMembers().clone();
+                    }
+                    break;
                 }
-            }
-            if (Input.isRepeated('right')) {
-                var nextBattlerSprite = this._spriteset.nearestBattlerSprite(currentSprite, 'right');
-                if (nextBattlerSprite) {
-                    nextBattlers = [nextBattlerSprite.battler()];
-                } else if (1 < $gameParty.members().length &&
-                           this._targetType === BATTLER_SELECTOR_TARGET_TYPE_ONE_OR_MULTIPLE) {
-                    nextBattlers = $gameParty.members().clone();
+            } else {
+                var currentSprite = this._spriteset.battlerSprites().filter(function(sprite) {
+                    return sprite.battler() === this._selectedBattlers[0];
+                }, this)[0];
+                if (Input.isRepeated('down')) {
+                    var nextBattlerSprite = this._spriteset.nearestBattlerSprite(currentSprite, 'down');
+                    if (nextBattlerSprite) {
+                        nextBattlers = [nextBattlerSprite.battler()];
+                    }
                 }
-            }
-            if (Input.isRepeated('left')) {
-                var nextBattlerSprite = this._spriteset.nearestBattlerSprite(currentSprite, 'left');
-                if (nextBattlerSprite) {
-                    nextBattlers = [nextBattlerSprite.battler()];
-                } else if (1 < $gameTroop.aliveMembers().length &&
-                           this._targetType === BATTLER_SELECTOR_TARGET_TYPE_ONE_OR_MULTIPLE) {
-                    nextBattlers = $gameTroop.aliveMembers().clone();
+                if (Input.isRepeated('up')) {
+                    var nextBattlerSprite = this._spriteset.nearestBattlerSprite(currentSprite, 'up');
+                    if (nextBattlerSprite) {
+                        nextBattlers = [nextBattlerSprite.battler()];
+                    }
+                }
+                if (Input.isRepeated('right')) {
+                    var nextBattlerSprite = this._spriteset.nearestBattlerSprite(currentSprite, 'right');
+                    if (nextBattlerSprite) {
+                        nextBattlers = [nextBattlerSprite.battler()];
+                    } else if (1 < $gameParty.members().length &&
+                               this._targetType === BATTLER_SELECTOR_TARGET_TYPE_ONE_OR_MULTIPLE) {
+                        nextBattlers = $gameParty.members().clone();
+                    }
+                }
+                if (Input.isRepeated('left')) {
+                    var nextBattlerSprite = this._spriteset.nearestBattlerSprite(currentSprite, 'left');
+                    if (nextBattlerSprite) {
+                        nextBattlers = [nextBattlerSprite.battler()];
+                    } else if (1 < $gameTroop.aliveMembers().length &&
+                               this._targetType === BATTLER_SELECTOR_TARGET_TYPE_ONE_OR_MULTIPLE) {
+                        nextBattlers = $gameTroop.aliveMembers().clone();
+                    }
                 }
             }
         }
@@ -690,13 +704,13 @@
                 return;
             }
             if (!this.cursorAll()) {
-                if (Input.isRepeated('right')) {
+                if (Input.isRepeated('right') || Input.isRepeated('pagedown')) {
                     SoundManager.playCursor();
                     this.setCursorAll(true);
                     this.updateCursor();
                 }
             } else {
-                if (Input.isRepeated('left')) {
+                if (Input.isRepeated('left') || Input.isRepeated('pageup')) {
                     SoundManager.playCursor();
                     this.setCursorAll(false);
                     this.selectLast();
