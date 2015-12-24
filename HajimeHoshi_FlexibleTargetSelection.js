@@ -16,6 +16,10 @@
  * @plugindesc Flexible target selection like Final Fantasy.
  * @author Hajime Hoshi
  *
+ * @param Reflection Animation ID
+ * @desc Animation ID for magic reflection instead of SE (if 0, the default SE is used).
+ * @default 0
+ *
  * @help
  *
  * Skill/Item Note:
@@ -25,11 +29,11 @@
 (function() {
     'use strict';
 
-    // TODO: Auto life doesn't work well for an enemy?
-    //       if an actor is dead and an enemy has auto life state.
+    var parameters = PluginManager.parameters('HajimeHoshi_FlexibleTargetSelection');
+    var reflectionAnimationId = Math.floor(Number(parameters['Reflection Animation ID'])) || 0;
+
     // TODO: Consider ConfigManager.commandRemember
     // TODO: Touch UI
-    // TODO: Fix magic reflection
 
     var _Scene_Boot_start = Scene_Boot.prototype.start;
     Scene_Boot.prototype.start = function() {
@@ -749,6 +753,79 @@
             return false;
         }
         return true;
+    };
+
+
+    //
+    // Magic reflection
+    //
+
+    var _Game_Action_itemEva = Game_Action.prototype.itemEva;
+    Game_Action.prototype.itemEva = function(target) {
+        if (this.isMagical() && this.isRecover()) {
+            return 0;
+        }
+        return _Game_Action_itemEva.call(this, target);
+    };
+
+    BattleManager.invokeMagicReflection = function(subject, target) {
+        // Reflection is already calculated at startAction.
+        this.invokeNormalAction(subject, target);
+    };
+
+    var _Game_Battler_performReflection = Game_Battler.prototype.performReflection;
+    Game_Battler.prototype.performReflection = function() {
+        if (reflectionAnimationId) {
+            return;
+        }
+        _Game_Battler_performReflection.call(this);
+    };
+
+    BattleManager.startAction = function() {
+        var subject = this._subject;
+        var action = subject.currentAction();
+        var targets = action.makeTargets();
+        var normalTargets = [];
+        var reflectionTargets = [];
+        var reflectedTargets = [];
+        targets.forEach(function(target) {
+            if (Math.random() < action.itemMrf(target)) {
+                // TODO: What about 'dead target' skill?
+                reflectionTargets.push(target);
+                reflectedTargets.push(target.isActor() ? $gameTroop.randomTarget() : $gameParty.randomTarget());
+                return;
+            }
+            normalTargets.push(target);
+        });
+        this._phase = 'action';
+        this._action = action;
+        this._targets = normalTargets.concat(reflectedTargets);
+        subject.useItem(action.item());
+        this._action.applyGlobal();
+        this.refreshStatus();
+        this._logWindow.startActionWithReflection(subject, action, normalTargets, reflectionTargets, reflectedTargets);
+        reflectionTargets.forEach(function(target) {
+            this._logWindow.displayReflection(target);
+        }, this);
+    };
+
+    Window_BattleLog.prototype.startActionWithReflection = function(subject, action, targets, reflectionTargets, reflectedTargets) {
+        var item = action.item();
+        this.push('performActionStart', subject, action);
+        this.push('waitForMovement');
+        this.push('performAction', subject, action);
+        // TODO: Remove the magic number!
+        if (reflectionAnimationId) {
+            this.push('showAnimation', subject, reflectionTargets.clone(), reflectionAnimationId);
+        }
+        this.push('showAnimation', subject, targets.clone(), item.animationId);
+        this.displayAction(subject, item);
+        if (reflectedTargets.length) {
+            for (var i = 0; i < 4; i++) {
+                this.push('wait');
+            }
+            this.push('showAnimation', subject, reflectedTargets.clone(), item.animationId);
+        }
     };
 
 })();

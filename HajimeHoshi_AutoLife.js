@@ -22,6 +22,9 @@
  *
  * @help
  *
+ * Auto life state doesn't work for enemies unless you use
+ * HajimeHoshi_FlexibleTargetSlection.
+ *
  * State Note:
  *   <auto_life> # The auto life state
  */
