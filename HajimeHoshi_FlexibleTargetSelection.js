@@ -263,7 +263,7 @@
         this._nameSprite.bitmap = new Bitmap(240, 48);
         this._nameSprite.visible = false;
         this._nameSprite.anchor.x = 0.5;
-        this._nameSprite.anchor.y = 0;
+        this._nameSprite.anchor.y = 1;
         this.addChild(this._nameSprite);
     };
 
@@ -281,7 +281,7 @@
         _Sprite_Battler_updateSelectionEffect.call(this);
         if (this._nameSprite) {
             this._nameSprite.visible = this._battler.isSelected();
-            this._nameSprite.y = -(this.bitmap.height + this._nameSprite.height);
+            this._nameSprite.y = -this.bitmap.height;
         }
     };
 
