@@ -57,20 +57,6 @@
         });
     };
 
-    Game_Unit.prototype.smoothDeadTargets = function(indices) {
-        if (indices.length === 0) {
-            return [];
-        }
-        if (indices.length === 1) {
-            return [this.smoothDeadTarget(indices[0])];
-        }
-        return indices.map(function(index) {
-            return this.members()[index];
-        }, this).filter(function(member) {
-            return member.isDead();
-        });
-    };
-
     Game_Action.prototype.canEnlargeSelection = function() {
         if (!this.item()) {
             return false;
@@ -164,18 +150,13 @@
         // TODO: Refactor this
         if (this.isForDeadFriend()) {
             var targets = [];
-            targets = targets.concat($gameParty.smoothDeadTargets(this._actorTargetIndices));
-            if (this.subject().isActor()) {
-                // Don't shift the targets: reviving skill for an aliving enemy
-                // should be invalid.
-                targets = targets.concat(this._enemyTargetIndices.map(function(index) {
-                    return $gameTroop.members()[index];
-                }).filter(function(member) {
-                    return member.isDead();
-                }));
-            } else {
-                targets = targets.concat($gameTroop.smoothDeadTargets(this._enemyTargetIndices));
-            }
+            // Don't shift the targets
+            targets = targets.concat(this._actorTargetIndices.map(function(index) {
+                return $gameParty.members()[index];
+            }));
+            targets = targets.concat(this._enemyTargetIndices.map(function(index) {
+                return $gameTroop.members()[index];
+            }));
             if (targets.length) {
                 if (this.canEnlargeSelection() && 1 < targets.length) {
                     this._isSelectionEnlarged = true;
@@ -785,14 +766,21 @@
         var subject = this._subject;
         var action = subject.currentAction();
         var targets = action.makeTargets();
+        // TODO: Use better names
         var normalTargets = [];
         var reflectionTargets = [];
         var reflectedTargets = [];
         targets.forEach(function(target) {
             if (Math.random() < action.itemMrf(target)) {
-                // TODO: What about 'dead target' skill?
                 reflectionTargets.push(target);
-                reflectedTargets.push(target.isActor() ? $gameTroop.randomTarget() : $gameParty.randomTarget());
+                // Don't use random(Dead)Targets. We want to ignore 'tgr' parameter here.
+                var candidates = [];
+                if (action.isForDeadFriend()) {
+                    candidates = target.isActor() ? $gameTroop.members() : $gameParty.members();
+                } else {
+                    candidates = target.isActor() ? $gameTroop.aliveMembers() : $gameParty.aliveMembers();
+                }
+                reflectedTargets.push(candidates[Math.randomInt(candidates.length)]);
                 return;
             }
             normalTargets.push(target);
@@ -814,7 +802,6 @@
         this.push('performActionStart', subject, action);
         this.push('waitForMovement');
         this.push('performAction', subject, action);
-        // TODO: Remove the magic number!
         if (reflectionAnimationId) {
             this.push('showAnimation', subject, reflectionTargets.clone(), reflectionAnimationId);
         }
