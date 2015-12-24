@@ -17,7 +17,7 @@
  * @author Hajime Hoshi
  *
  * @param Skill ID
- * @desc The skill ID which is executed to the actor when he/she dies.
+ * @desc The skill ID which is executed to the battler when it dies.
  * @default 1
  *
  * @help
@@ -44,17 +44,30 @@
     AnonymousActor.prototype.makeActions = function() {
         this.clearActions();
         this._actions = [];
-        var members = $gameParty.members();
-        for (var i = 0; i < members.length; i++) {
-            if (!members[i].hasAutoLifeState()) {
-                continue;
-            }
+        var members = $gameParty.deadMembers().concat($gameTroop.deadMembers());
+        members = members.filter(function(member) {
+            return member.hasAutoLifeState();
+        });
+        members.forEach(function(member) {
             var action = new AutoLifeAction(this, true)
             action.setSkill(skillId);
             action.prepare();
-            action.setTarget(i);
+            // setTargets is defined in HajimeHoshi_FlexibleTargetSelection.js
+            if (action.setTargets) {
+                if (member.isActor()) {
+                    action.setTargets([member.index()], []);
+                } else {
+                    action.setTargets([], [member.index()]);
+                }
+            } else {
+                if (member.isActor()) {
+                    action.setTarget(member.index());
+                } else {
+                    throw 'Auto life for enemies is not implemented.';
+                }
+            }
             this._actions.push(action);
-        }
+        }, this);
     };
 
     function AutoLifeAction() {
@@ -67,10 +80,10 @@
     var _AutoLifeAction_apply = AutoLifeAction.prototype.apply;
     AutoLifeAction.prototype.apply = function(target) {
         _AutoLifeAction_apply.call(this, target);
-        target.states().forEach(function(state) {
-            if (!state.meta.auto_life) {
-                return;
-            }
+        var states = target.states().filter(function(state) {
+            return state.meta.auto_life;
+        });
+        states.forEach(function(state) {
             target.removeState(state.id);
         });
     };
@@ -114,11 +127,20 @@
 
     var _BattleManager_checkBattleEnd = BattleManager.checkBattleEnd;
     BattleManager.checkBattleEnd = function() {
-        if (this._phase && !this.checkAbort() && $gameParty.isAllDead()) {
-            if ($gameParty.members().some(function(actor) {
-                return actor.hasAutoLifeState();
-            })) {
-                return false;
+        if (this._phase && !this.checkAbort()) {
+            if ($gameParty.isAllDead()) {
+                if ($gameParty.members().some(function(actor) {
+                    return actor.hasAutoLifeState();
+                })) {
+                    return false;
+                }
+            }
+            if ($gameTroop.isAllDead()) {
+                if ($gameTroop.members().some(function(enemy) {
+                    return enemy.hasAutoLifeState();
+                })) {
+                    return false;
+                }
             }
         }
         return _BattleManager_checkBattleEnd.call(this);
@@ -131,10 +153,9 @@
             this._stashedSubject = null;
         }
         // TODO: How about troop?
-        var targets = $gameParty.deadMembers().filter(function(actor) {
-            return actor.states().some(function(state) {
-                return state.meta.auto_life;
-            });
+        var targets = $gameParty.deadMembers().concat($gameTroop.deadMembers());
+        targets = targets.filter(function(battler) {
+            return battler.hasAutoLifeState();
         });
         if (targets.length) {
             var subject = new AnonymousActor(anonymousActorId);

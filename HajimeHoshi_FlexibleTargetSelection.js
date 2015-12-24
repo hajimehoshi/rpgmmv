@@ -25,6 +25,8 @@
 (function() {
     'use strict';
 
+    // TODO: Auto life doesn't work well for an enemy?
+    //       if an actor is dead and an enemy has auto life state.
     // TODO: Consider ConfigManager.commandRemember
     // TODO: Touch UI
     // TODO: Fix magic reflection
@@ -48,7 +50,7 @@
             return this.members()[index];
         }, this).filter(function(member) {
             return member.isAlive();
-        }, this);
+        });
     };
 
     Game_Unit.prototype.smoothDeadTargets = function(indices) {
@@ -62,7 +64,7 @@
             return this.members()[index];
         }, this).filter(function(member) {
             return member.isDead();
-        }, this);
+        });
     };
 
     Game_Action.prototype.canEnlargeSelection = function() {
@@ -159,7 +161,15 @@
         if (this.isForDeadFriend()) {
             var targets = [];
             targets = targets.concat($gameParty.smoothDeadTargets(this._actorTargetIndices));
-            if (this.subject().isEnemy()) {
+            if (this.subject().isActor()) {
+                // Don't shift the targets: reviving skill for an aliving enemy
+                // should be invalid.
+                targets = targets.concat(this._enemyTargetIndices.map(function(index) {
+                    return $gameTroop.members()[index];
+                }).filter(function(member) {
+                    return member.isDead();
+                }));
+            } else {
                 targets = targets.concat($gameTroop.smoothDeadTargets(this._enemyTargetIndices));
             }
             if (targets.length) {
