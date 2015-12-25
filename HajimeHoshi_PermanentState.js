@@ -32,9 +32,6 @@
         });
     };
 
-    Game_BattlerBase.prototype.permanentStates = function() {
-    };
-
     var _Game_Battler_removeState = Game_Battler.prototype.removeState;
     Game_Battler.prototype.removeState = function(stateId) {
         if (this.isStatePermanent(stateId)) {
