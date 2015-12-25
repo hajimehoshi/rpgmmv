@@ -33,9 +33,11 @@
         this.gainDrainedHp(value);
     };
 
+    var _Game_Battler_onDamage = Game_Battler.prototype.onDamage;
     Game_Battler.prototype.onDamage = function(value, isPhysicalAttack) {
         if (isPhysicalAttack) {
-            this.removeStatesByDamage();
+            _Game_Battler_onDamage.call(this);
+            return;
         }
         this.chargeTpByDamage(value / this.mhp);
     };
