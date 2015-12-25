@@ -23,7 +23,7 @@
  * @help
  *
  * Skill/Item Note:
- *   <selectable_all> # Enable to switch targets to all.
+ *   <selectable_all> # Enables to switch targets to all.
  */
 
 (function() {
