@@ -36,7 +36,7 @@
     var _Game_Battler_onDamage = Game_Battler.prototype.onDamage;
     Game_Battler.prototype.onDamage = function(value, isPhysicalAttack) {
         if (isPhysicalAttack) {
-            _Game_Battler_onDamage.call(this);
+            _Game_Battler_onDamage.call(this, value);
             return;
         }
         this.chargeTpByDamage(value / this.mhp);
