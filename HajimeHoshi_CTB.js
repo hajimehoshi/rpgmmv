@@ -267,7 +267,7 @@
 
         // TODO: It would be much better if the turns are updated on selecting a skill of an actor.
         var battlers = calcTurns(this.allBattleMembers(), this._turnsWindow.numVisibleRows());
-        //battlers = this._interruptingBattlers.concat(battlers);
+        battlers = this._interruptingBattlers.concat(battlers);
         battlers.length = this._turnsWindow.numVisibleRows();
         // TODO: Show gray if a battler is inactive?
         // TODO: Better colors
