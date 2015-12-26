@@ -20,7 +20,9 @@
  * @desc The formula to calculate the multiplier of the waiting point for a turn.
  * @default a.agi / (battlers.reduce(function(p, b) { return p + b.agi; }, 0) / battlers.length)
  *
- * @help This plugin offers Count Time Battle system.
+ * @help
+ *
+ * This plugin offers Count Time Battle system.
  * A battler has a 'waiting point' and this increases for each frame.
  * A battler becames actionable when its waiting point reaches maximum (65536).
  * I used EllyeSimpleATB.js as reference (http://pastebin.com/fhGC2Sn7).
@@ -162,6 +164,11 @@
         this._turnWp = 0;
         this._turnEndSubject = null;
         this._turnsWindow = null;
+        this._interruptingBattlers = [];
+    };
+
+    BattleManager.addInterruptingBattler = function(battler) {
+        this._interruptingBattlers.push(battler);
     };
 
     var _BattleManager_startBattle = BattleManager.startBattle;
@@ -216,7 +223,7 @@
                     continue;
                 }
                 var rate = evalWpRate(battlers[i], battlers);
-                wps[i] += (AVERAGE_WP_DELTA * rate).clamp(0, MAX_WP)|0;;
+                wps[i] += (AVERAGE_WP_DELTA * rate).clamp(0, MAX_WP)|0;
             }
         }
         result.length = num;
@@ -260,11 +267,19 @@
 
         // TODO: It would be much better if the turns are updated on selecting a skill of an actor.
         var battlers = calcTurns(this.allBattleMembers(), this._turnsWindow.numVisibleRows());
+        //battlers = this._interruptingBattlers.concat(battlers);
+        battlers.length = this._turnsWindow.numVisibleRows();
         // TODO: Show gray if a battler is inactive?
+        // TODO: Better colors
+        // TODO: Show arrows for targets
         this._turnsWindow.setBattlers(battlers);
         this._turnsWindow.refresh();
 
-        proceedTilSomeoneHasTurn(this.allBattleMembers());
+        if (this._interruptingBattlers.length) {
+            this._interruptingBattlers.shift();
+        } else {
+            proceedTilSomeoneHasTurn(this.allBattleMembers());
+        }
 
         var battler = battlers[0];
         var wasAlive = battler.isAlive();

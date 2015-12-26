@@ -19,7 +19,7 @@
  * @help
  *
  * Actor/Class/Weapon/Armor/State Note:
- *   <add_value_to_param:mhp,+2> # Add +2 value to the parameter mhp.
+ *   <add_value_to_param:mhp,+2> # Adds +2 value to the parameter mhp.
  *                               # The first argument must be mhp, mmp, atk, def,
  *                               # mat, mdf, agi or luk.
  *                               # The second argument must be an integer value
