@@ -126,7 +126,7 @@
     };
 
     Game_BattlerBase.prototype.setWp = function(wp) {
-        this._wp = wp;
+        this._wp = wp.clamp(0, MAX_WP);
         this.refresh();
     };
 
@@ -267,6 +267,7 @@
 
         // TODO: It would be much better if the turns are updated on selecting a skill of an actor.
         var battlers = calcTurns(this.allBattleMembers(), this._turnsWindow.numVisibleRows());
+        // TODO: What if an interrupting battler is dead?
         battlers = this._interruptingBattlers.concat(battlers);
         battlers.length = this._turnsWindow.numVisibleRows();
         // TODO: Show gray if a battler is inactive?
@@ -341,6 +342,7 @@
     BattleManager.endTurn = function() {
         this._phase = 'turnEnd';
         if (this._turnEndSubject) {
+            // The current wp might be less than MAX_WP when the actor was intrrupting.
             this._turnEndSubject.setWp(this._turnEndSubject.wp - MAX_WP);
             this._turnEndSubject.onTurnEnd();
             this.refreshStatus();
