@@ -265,8 +265,11 @@
             return;
         }
 
+        var allAppearedMembers = this.allBattleMembers().filter(function(battler) {
+            return battler.isAppeared();
+        });
         // TODO: It would be much better if the turns are updated on selecting a skill of an actor.
-        var battlers = calcTurns(this.allBattleMembers(), this._turnsWindow.numVisibleRows());
+        var battlers = calcTurns(allAppearedMembers, this._turnsWindow.numVisibleRows());
         // TODO: What if an interrupting battler is dead?
         battlers = this._interruptingBattlers.concat(battlers);
         battlers.length = this._turnsWindow.numVisibleRows();
@@ -279,7 +282,7 @@
         if (this._interruptingBattlers.length) {
             this._interruptingBattlers.shift();
         } else {
-            proceedTilSomeoneHasTurn(this.allBattleMembers());
+            proceedTilSomeoneHasTurn(allAppearedMembers);
         }
 
         var battler = battlers[0];
