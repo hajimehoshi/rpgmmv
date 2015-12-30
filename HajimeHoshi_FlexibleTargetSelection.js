@@ -123,14 +123,12 @@
         this._actions.push(action);
     };
 
-    Game_Action.prototype.makeTargets = function() {
-        var targets = [];
-        if (!this._forcing && this.subject().isConfused()) {
-            targets = [this.confusionTarget()];
-        } else {
-            targets = this.targets();
-        }
-        return this.repeatTargets(targets);
+    Game_Action.prototype.targetsForOpponents = function() {
+        return this.targets();
+    };
+
+    Game_Action.prototype.targetsForFriends = function() {
+        return this.targets();
     };
 
     Game_Action.prototype.targets = function() {
