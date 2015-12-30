@@ -142,6 +142,9 @@
             return [this.subject()];
         }
         if (this.isForRandom()) {
+            if (this.opponentsUnit().tgrSum() === 0) {
+                return [];
+            }
             for (var i = 0; i < this.numTargets(); i++) {
                 targets.push(this.opponentsUnit().randomTarget());
             }
@@ -196,6 +199,9 @@
         var unit = this.isForFriend() ? this.friendsUnit() : this.opponentsUnit();
         if (this.isForAll()) {
             return unit.aliveMembers();
+        }
+        if (unit.tgrSum() === 0) {
+            return [];
         }
         if (this.canEnlargeSelection() && Math.randomInt(unit.aliveMembers().length + 1) === 0) {
             targets = unit.aliveMembers();
