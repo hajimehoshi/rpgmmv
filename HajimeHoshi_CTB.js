@@ -379,4 +379,31 @@
             this.stepBack();
         }
     };
+
+    //
+    // Conditions
+    //
+
+    var _Game_Enemy_initMembers = Game_Enemy.prototype.initMembers;
+    Game_Enemy.prototype.initMembers = function() {
+        _Game_Enemy_initMembers.call(this);
+        this._turn = 0;
+    };
+
+    var _Game_Enemy_onTurnEnd = Game_Enemy.prototype.onTurnEnd;
+    Game_Enemy.prototype.onTurnEnd = function() {
+        _Game_Enemy_onTurnEnd.call(this);
+        this._turn++;
+    };
+
+    Game_Enemy.prototype.meetsTurnCondition = function(param1, param2) {
+        var n = this._turn;
+        if (param2 === 0) {
+            return n === param1;
+        } else {
+            // Consider the case when n === 0.
+            return n >= param1 && n % param2 === param1 % param2;
+        }
+    };
+
 })();
