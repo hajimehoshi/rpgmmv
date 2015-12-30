@@ -221,6 +221,16 @@
         return damage;
     };
 
+    var _Game_Action_applyItemUserEffect = Game_Action.prototype.applyItemUserEffect;
+    Game_Action.prototype.applyItemUserEffect = function(target) {
+        if (this._isSelectionEnlarged) {
+            var value = Math.floor(this.item().tpGain * this.subject().tcr);
+            this.subject().gainSilentTp(value / 2);
+            return;
+        }
+        _Game_Action_applyItemUserEffect.call(this,target);
+    };
+
     // Brighter colors
     Sprite_Battler.prototype.updateSelectionEffect = function() {
         var target = this._effectTarget;
