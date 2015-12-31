@@ -126,7 +126,7 @@
     };
 
     Game_BattlerBase.prototype.setWp = function(wp) {
-        this._wp = wp.clamp(0, MAX_WP);
+        this._wp = wp;
         this.refresh();
     };
 
@@ -346,7 +346,11 @@
         this._phase = 'turnEnd';
         if (this._turnEndSubject) {
             // The current wp might be less than MAX_WP when the actor was intrrupting.
-            this._turnEndSubject.setWp(this._turnEndSubject.wp - MAX_WP);
+            var nextWp = this._turnEndSubject.wp;
+            if (MAX_WP <= nextWp) {
+                nextWp -= MAX_WP;
+            }
+            this._turnEndSubject.setWp(nextWp);
             this._turnEndSubject.onTurnEnd();
             this.refreshStatus();
         }
