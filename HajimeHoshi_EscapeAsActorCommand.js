@@ -99,11 +99,13 @@
         this._escapeRatio *= rate;
     };
 
+    // TODO: This is an independent bug fix.
     BattleManager.processEscape = function() {
         $gameParty.performEscape();
         SoundManager.playEscape();
         var success = this._preemptive ? true : (Math.random() < this._escapeRatio);
         if (success) {
+            $gameParty.removeBattleStates();
             this.displayEscapeSuccessMessage();
             this._escaped = true;
             this.processAbort();
