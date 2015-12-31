@@ -47,13 +47,15 @@
                 return;
             }
             var arr = obj.meta.add_value_to_param.split(',');
-            if (arr.length !== 2) {
+            if (arr.length % 2 !== 0) {
                 return;
             }
-            if (paramNameToParamId[arr[0]] !== paramId) {
-                return;
+            for (var i = 0; i < arr.length / 2; i++) {
+                if (paramNameToParamId[arr[i*2]] !== paramId) {
+                    return;
+                }
+                delta += Math.floor(Number(arr[i*2+1])) || 0;
             }
-            delta += Math.floor(Number(arr[1])) || 0;
         });
         return delta;
     };
