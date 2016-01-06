@@ -19,8 +19,8 @@
  * @help
  *
  * Actor/Class/Weapon/Armor/State Note:
- *   <permanent_state:2> # Adds state #2 to an actor or an enemy permanently.
- *                       # This state is never removed while this trait is valid during a battle.
+ *   <permanent_state:2,3> # Adds state #2 and #3 to an actor or an enemy permanently.
+ *                         # This state is never removed while this trait is valid during a battle.
  */
 
 (function() {
@@ -28,7 +28,15 @@
 
     Game_BattlerBase.prototype.isStatePermanent = function(stateId) {
         return this.traitObjects().some(function(obj) {
-            return Number(obj.meta.permanent_state) === stateId;
+            if (!obj.meta.permanent_state) {
+                return false;
+            }
+            var states = obj.meta.permanent_state.split(',').map(function(str) {
+                return Number(str);
+            });
+            return states.some(function(id) {
+                return id === stateId;
+            });
         });
     };
 
