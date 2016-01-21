@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /*:
- * @plugindesc Mini Map like FF6 (ver 0.2.0)
+ * @plugindesc Mini Map like FF6 (ver 0.3.0 alpha)
  * @author Hajime Hoshi
  *
  * @param Picture ID
@@ -23,6 +23,11 @@
  * @help This plugin enables to show a mini map.
  * Note that this plugin preserves one picture ID for a mini map,
  * and the picture ID can't be used for a regular picture.
+ *
+ * Plugin Command:
+ *   MiniMap add-pin 1 2 10 20 # Adds a pin #2 at (10, 20) in Map #1.
+ *                             # Note that pin ID should be in between 1 and 10.
+ *   MiniMap remove-pin 1 2    # Removes a pin #2 in Map #1
  *
  * MapInfo Note:
  *   <mini_map> # Show a mini map for this map.
@@ -39,15 +44,52 @@
 
     var miniMapBitmaps = {};
     var EMPTY_BITMAP = new Bitmap(16, 16);
+    var pins = {};
 
     var MINI_MAP_MARGIN = 16;
     var MINI_MAP_SIZE = 184;
     var POSITION_RADIUS = 4;
+    var POSITION_COLOR = '#ff0000';
+    var PIN_RADIUS = 4;
+    var PIN_COLOR = '#0040ff';
+    var MAX_PIN_ID = 10;
     var COLORS = {
         'walk':     [192, 192, 192, 224],
         'mountain': [255, 255, 255, 224],
         'other':    [128, 128, 128, 192],
     };
+
+    var _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
+    Game_Interpreter.prototype.pluginCommand = function(command, args) {
+        _Game_Interpreter_pluginCommand.call(this, command, args);
+        if (command !== 'MiniMap') {
+            return;
+        }
+        var mapId = Number(args[1]);
+        var pinId = Number(args[2]);
+        switch (args[0]) {
+        case 'add-pin':
+            if (args.length !== 5) {
+                throw 'MiniMap add-pins arguments must be equal to 4';
+            }
+            var x = Number(args[3]);
+            var y = Number(args[4]);
+            if (!(mapId in pins)) {
+                pins[mapId] = {};
+            }
+            pins[mapId][pinId] = {x: x, y: y};
+            break;
+        case 'remove-pin':
+            if (args.length !== 3) {
+                throw 'MiniMap remove-pins arguments must be equal to 2';
+            }
+            if (!(mapId in pins)) {
+                break;
+            }
+            delete pins[mapId][pinId];
+            break;
+        }
+    }
 
     /**
      * Replaces the pixel data.
@@ -72,24 +114,77 @@
     Sprite_MiniMapPicture.prototype.initialize = function(pictureId) {
         Sprite_Picture.prototype.initialize.call(this, pictureId);
 
-        this._currentPositionSprite = new Sprite();
+        var pinBitmap = new Bitmap(PIN_RADIUS * 2, PIN_RADIUS * 2);
+        pinBitmap.drawCircle(PIN_RADIUS, PIN_RADIUS, PIN_RADIUS, PIN_COLOR);
+        this._pinSprites = [];
+        for (var i = 0; i < MAX_PIN_ID; i++) {
+            var sprite = new Sprite();
+            sprite.bitmap = pinBitmap;
+            this._pinSprites.push(sprite);
+            this.addChild(sprite);
+        }
+
         var positionBitmap = new Bitmap(POSITION_RADIUS * 2, POSITION_RADIUS * 2);
-        positionBitmap.drawCircle(POSITION_RADIUS, POSITION_RADIUS, POSITION_RADIUS, '#ff0000');
+        positionBitmap.drawCircle(POSITION_RADIUS, POSITION_RADIUS, POSITION_RADIUS, POSITION_COLOR);
+        this._currentPositionSprite = new Sprite();
         this._currentPositionSprite.bitmap = positionBitmap;
         this.addChild(this._currentPositionSprite);
     };
 
     Sprite_MiniMapPicture.prototype.update = function() {
         Sprite_Picture.prototype.update.call(this);
-        if (this.visible) {
-            this.updateCurrentPositionSprite();
+        if (!this.visible) {
+            return;
+        }
+        if (!this.bitmap) {
+            return;
+        }
+        this.updatePinSprites();
+        this.updateCurrentPositionSprite();
+    };
+
+    Sprite_MiniMapPicture.prototype.adjustPointSprite = function(sprite, x, y) {
+        var picture = this.picture();
+        var size = Math.max(this.bitmap.width, this.bitmap.height);
+        var miniMapScale = MINI_MAP_SIZE / size;
+        var scaleX = picture.scaleX() / 100.0;
+        var scaleY = picture.scaleY() / 100.0;
+        var positionScaleX = 1 / miniMapScale / scaleX;
+        var positionScaleY = 1 / miniMapScale / scaleY;
+        var radiusX = sprite.bitmap.width / 2;
+        var radiusY = sprite.bitmap.height / 2;
+        sprite.x = x - radiusX * positionScaleX + 0.5 - this.anchor.x * this.bitmap.width;
+        sprite.y = y - radiusY * positionScaleY + 0.5 - this.anchor.y * this.bitmap.height;
+        sprite.scale.x = positionScaleX;
+        sprite.scale.y = positionScaleY;
+    }
+
+    Sprite_MiniMapPicture.prototype.updatePinSprites = function() {
+        for (var i = 0; i < MAX_PIN_ID; i++) {
+            this._pinSprites[i].visible = false;
+        }
+        if (this.bitmap === EMPTY_BITMAP) {
+            return;
+        }
+        var picture = this.picture();
+        if (!picture) {
+            return;
+        }
+        var mapId = $gameMap.mapId();
+        if (!(mapId in pins)) {
+            return;
+        }
+        for (var i = 0; i < MAX_PIN_ID; i++) {
+            if (!(i in pins[mapId])) {
+                continue;
+            }
+            this._pinSprites[i].visible = true;
+            var position = pins[mapId][i];
+            this.adjustPointSprite(this._pinSprites[i], position.x, position.y);
         }
     };
 
     Sprite_MiniMapPicture.prototype.updateCurrentPositionSprite = function() {
-        if (!this.bitmap) {
-            return;
-        }
         if (this.bitmap === EMPTY_BITMAP) {
             this._currentPositionSprite.visible = false;
             return;
@@ -99,16 +194,7 @@
         if (!picture) {
             return;
         }
-        var size = Math.max(this.bitmap.width, this.bitmap.height);
-        var miniMapScale = MINI_MAP_SIZE / size;
-        var scaleX = picture.scaleX() / 100.0;
-        var scaleY = picture.scaleY() / 100.0;
-        var positionScaleX = 1 / miniMapScale / scaleX;
-        var positionScaleY = 1 / miniMapScale / scaleY;
-        this._currentPositionSprite.x = $gamePlayer.x - POSITION_RADIUS * positionScaleX + 0.5 - this.anchor.x * this.bitmap.width;
-        this._currentPositionSprite.y = $gamePlayer.y - POSITION_RADIUS * positionScaleY + 0.5 - this.anchor.y * this.bitmap.height;
-        this._currentPositionSprite.scale.x = positionScaleX;
-        this._currentPositionSprite.scale.y = positionScaleY;
+        this.adjustPointSprite(this._currentPositionSprite, $gamePlayer.x, $gamePlayer.y);
     };
 
     Sprite_MiniMapPicture.prototype.updateScale = function() {
