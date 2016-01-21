@@ -44,7 +44,6 @@
 
     var miniMapBitmaps = {};
     var EMPTY_BITMAP = new Bitmap(16, 16);
-    var pins = {};
 
     var MINI_MAP_MARGIN = 16;
     var MINI_MAP_SIZE = 184;
@@ -74,19 +73,13 @@
             }
             var x = Number(args[3]);
             var y = Number(args[4]);
-            if (!(mapId in pins)) {
-                pins[mapId] = {};
-            }
-            pins[mapId][pinId] = {x: x, y: y};
+            $gameSystem.addMiniMapPin(mapId, pinId, x, y);
             break;
         case 'remove-pin':
             if (args.length !== 3) {
                 throw 'MiniMap remove-pins arguments must be equal to 2';
             }
-            if (!(mapId in pins)) {
-                break;
-            }
-            delete pins[mapId][pinId];
+            $gameSystem.removeMiniMapPin(mapId, pinId);
             break;
         }
     }
@@ -171,16 +164,14 @@
             return;
         }
         var mapId = $gameMap.mapId();
-        if (!(mapId in pins)) {
-            return;
-        }
         for (var i = 0; i < MAX_PIN_ID; i++) {
-            if (!(i in pins[mapId])) {
+            var pinId = i + 1;
+            var pin = $gameSystem.getMiniMapPin(mapId, pinId);
+            if (!pin) {
                 continue;
             }
             this._pinSprites[i].visible = true;
-            var position = pins[mapId][i];
-            this.adjustPointSprite(this._pinSprites[i], position.x, position.y);
+            this.adjustPointSprite(this._pinSprites[i], pin.x, pin.y);
         }
     };
 
@@ -294,6 +285,45 @@
             return;
         }
         miniMapPictureSprite.bitmap = miniMapBitmap;
+    };
+
+    var _Game_System_initialize = Game_System.prototype.initialize;
+    Game_System.prototype.initialize = function() {
+        _Game_System_initialize.call(this);
+        this._miniMapPins = {};
+    };
+
+    Game_System.prototype.addMiniMapPin = function(mapId, pinId, x, y) {
+        if (this._miniMapPins === undefined) {
+            this._miniMapPins = {};
+        }
+        if (!(mapId in this._miniMapPins)) {
+            this._miniMapPins[mapId] = {};
+        }
+        this._miniMapPins[mapId][pinId] = {x: x, y: y};
+    };
+
+    Game_System.prototype.removeMiniMapPin = function(mapId, pinId) {
+        if (this._miniMapPins === undefined) {
+            this._miniMapPins = {};
+        }
+        if (!(mapId in this._miniMapPins)) {
+            return;
+        }
+        delete this._miniMapPins[mapId][pinId];
+    };
+
+    Game_System.prototype.getMiniMapPin = function(mapId, pinId) {
+        if (this._miniMapPins === undefined) {
+            this._miniMapPins = {};
+        }
+        if (!(mapId in this._miniMapPins)) {
+            return null;
+        }
+        if (!(pinId in this._miniMapPins[mapId])) {
+            return null;
+        }
+        return this._miniMapPins[mapId][pinId];
     };
 
 })();
